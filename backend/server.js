@@ -2,10 +2,8 @@
 // SUCE — servidor backend (reemplaza a PostgREST)
 //  - POST /rpc/<funcion>  → ejecuta api.<funcion>(...) en Neon
 //  - /rpc/login           → verifica usuario/clave y devuelve un JWT
-//  - Sirve la carpeta ../frontend, así abrís todo en http://localhost:3000
 // =====================================================================
 require("dotenv").config();
-const path = require("path");
 const http = require("http");
 const express = require("express");
 const cors = require("cors");
@@ -33,7 +31,13 @@ const pool = new Pool({
 });
 
 const app = express();
-app.use(cors());
+
+// ⚠️ CAMBIO AQUÍ: Permitir peticiones desde GitHub Pages y Localhost
+app.use(cors({
+  origin: ['https://arcedeveloper.github.io', 'http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 const NOMBRE_VALIDO = /^[a-z_][a-z0-9_]*$/;
@@ -133,15 +137,13 @@ app.post("/rpc/:fn", async (req, res) => {
   }
 });
 
-// ---- Frontend (así no hace falta Live Server) ----
-app.use(express.static(path.join(__dirname, "..", "frontend")));
+// ⚠️ QUITAMOS LA LÍNEA DE express.static PORQUE EL FRONTEND AHORA ESTÁ EN GITHUB PAGES
 
 const server = http.createServer(app);
 rt = crearRealtime(server, { jwt, jwtSecret: JWT_SECRET });
 adminLive = crearAdminLive({ pool, rt });   // empuja datos en vivo al panel admin
 
 server.listen(PORT, () => {
-  console.log(`\n✅ SUCE corriendo en http://localhost:${PORT}`);
-  console.log(`   Abrí http://localhost:${PORT}/index.html en el navegador`);
-  console.log(`   Tiempo real (WebSocket) activo en ws://localhost:${PORT}/ws\n`);
+  console.log(`\n✅ SUCE Backend corriendo en el puerto ${PORT}`);
+  console.log(`   Tiempo real (WebSocket) activo\n`);
 });
