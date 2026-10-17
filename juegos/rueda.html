@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rueda de la Suerte — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style></style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="juego-wrap">
+      <a href="../index.html" class="volver">← Volver al lobby</a>
+      <div class="juego-top">
+        <div class="marca">🎡 Rueda de la Suerte</div>
+        <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+      </div>
+
+      <section class="mesa">
+        <p class="mesa-titulo">Girá y mirá dónde frena</p>
+        <div class="rueda-wrap"><div class="rueda-flecha"></div><svg viewBox="0 0 300 300" role="img" aria-label="Rueda de la suerte"><g class="rueda-gira" id="rue"></g></svg></div>
+        <div class="rueda-etiqueta" id="etq"></div>
+        <div class="resultado" id="resultado"></div>
+      </section>
+
+
+      <div id="rack"></div>
+      <button class="btn-jugar" id="btn-jugar">Girar la rueda</button>
+      <div id="mensaje" role="status" style="position:absolute;left:-9999px"></div>
+
+      <details class="reglas">
+        <summary>Cómo se paga</summary>
+        <table class="tabla-premios"><tr><td>×10</td><td>Premio mayor</td></tr><tr><td>×3</td><td>3 veces tu apuesta</td></tr><tr><td>×2</td><td>El doble</td></tr><tr><td>×1,5</td><td>Una vez y media</td></tr><tr><td>×1</td><td>Recuperás la apuesta</td></tr><tr><td>×0</td><td>Sin premio</td></tr></table><p style="color:var(--text-dim);font-size:.82rem;margin:0 0 10px">Con 10.000 apostadas, el premio mayor paga 100.000.</p>
+      </details>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+    const SEG = [0, 1, 0, 1.5, 0, 2, 1, 0, 3, 10];
+    const COL = { 0: "#1e293b", 1: "#0f766e", 1.5: "#1d4ed8", 2: "#7e22ce", 3: "#be185d", 10: "#2dd4bf" };
+    const paso = 360 / SEG.length, C = 150, R = 144;
+    const rad = (a) => (a - 90) * Math.PI / 180, pt = (a, r) => [C + r * Math.cos(rad(a)), C + r * Math.sin(rad(a))];
+    let s = `<circle cx="150" cy="150" r="149" fill="#0b1a1f" stroke="rgba(94,234,212,.6)" stroke-width="2"/>`;
+    SEG.forEach((m, i) => {
+      const a0 = i * paso - paso / 2, a1 = i * paso + paso / 2, [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R), [tx, ty] = pt(i * paso, 106);
+      s += `<path d="M150 150 L${x0} ${y0} A${R} ${R} 0 0 1 ${x1} ${y1} Z" fill="${COL[m]}" stroke="rgba(255,255,255,.4)" stroke-width="1"/>`
+         + `<text x="${tx}" y="${ty}" fill="${m === 10 ? '#042f2e' : '#fff'}" font-size="${m === 10 ? 25 : 21}" font-weight="800" text-anchor="middle" dominant-baseline="central" font-family="Poppins,sans-serif" transform="rotate(${i * paso} ${tx} ${ty})">×${String(m).replace(".", ",")}</text>`;
+    });
+    s += `<circle cx="150" cy="150" r="26" fill="#071a1f" stroke="#5eead4" stroke-width="3"/>`;
+    const rue = document.getElementById("rue"), etq = document.getElementById("etq"); rue.innerHTML = s;
+    let vueltas = 0;
+    Mesa.iniciar({ juego: "rueda", inicial: 1000 });
+    document.getElementById("btn-jugar").onclick = (e) => Mesa.ronda(e.currentTarget, async (apuesta) => {
+      etq.textContent = "";
+      const data = await jugarRueda(apuesta);
+      const m = Number(data.resultado.multiplicador);
+      const opciones = SEG.map((v, i) => (v === m ? i : -1)).filter((i) => i >= 0);
+      const idx = opciones[Math.floor(Math.random() * opciones.length)] ?? 0;
+      vueltas++;
+      rue.style.transition = Efectos.reducido ? "none" : "";
+      rue.style.transform = `rotate(${vueltas * 1800 - idx * paso}deg)`;
+      const t = setInterval(() => Sonido.tocar("tick"), 200);
+      await Efectos.esperar(Efectos.reducido ? 0 : 4700); clearInterval(t);
+      etq.textContent = m === 0 ? "Sin premio" : `×${String(m).replace(".", ",")}`; etq.classList.remove("premio-flash"); void etq.offsetWidth; etq.classList.add("premio-flash");
+      await Efectos.esperar(250);
+      Mesa.resultado({ apuesta, ganancia: data.ganancia });
+      Mesa.setSaldo(data.saldo_nuevo);
+    });
+  </script>
+</body>
+</html>

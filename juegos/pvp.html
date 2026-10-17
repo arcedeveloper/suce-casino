@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mesa en Vivo — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style>
+  .mesa-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    background: var(--bg-card-2);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    font-size: 0.88rem;
+  }
+  .mesa-item .mesa-info { flex: 1; }
+  .mesa-item button { width: auto; padding: 8px 16px; font-size: 0.82rem; }
+  .punto-vivo-chico {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); display: inline-block;
+    animation: parpadeo 1.6s ease-in-out infinite;
+  }
+  .duelo-pvp { display: flex; justify-content: center; align-items: center; gap: 18px; margin: 14px 0; }
+  .carta-visual {
+    min-width: 70px; height: 98px; padding: 0 8px;
+    background: linear-gradient(180deg, #ffffff, #e2e8f0);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.7rem; font-weight: 800; color: #0f172a;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  }
+  .vs-pvp { font-family: 'Playfair Display', serif; color: var(--neon-suave); font-weight: 900; }
+  .estado-sala { text-align: center; color: var(--text-dim); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+  <div class="contenedor">
+    <a href="../index.html" class="volver">← Volver al lobby</a>
+    <div class="topbar">
+      <div class="marca" id="titulo-marca">⚡ Mesa en Vivo</div>
+      <div class="saldo">🪙 <span id="saldo">···</span></div>
+    </div>
+
+    <!-- Vista: sin mesa activa -->
+    <div id="vista-sin-mesa">
+      <div class="panel">
+        <h3 style="margin-top:0;">Crear mesa</h3>
+        <p class="sub" style="margin-top:-8px;" id="descripcion-juego"></p>
+        <div id="rack"></div>
+        <button onclick="crearMesa()">Crear mesa y esperar rival</button>
+        <div class="mensaje" id="mensaje-crear"></div>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin-top:0;">Mesas disponibles <span id="estado-ws" class="sub" style="font-size:.72rem; font-weight:400; margin-left:8px;"></span></h3>
+        <div id="lista-mesas"><p class="sub">Buscando mesas...</p></div>
+      </div>
+    </div>
+
+    <!-- Vista: esperando oponente -->
+    <div id="vista-esperando" style="display:none;">
+      <div class="panel" style="text-align:center;">
+        <p class="estado-sala"><span class="punto-vivo-chico"></span> Esperando que alguien se una a tu mesa...</p>
+        <div style="font-size:2rem; margin:14px 0;">🪙 <span id="apuesta-esperando"></span></div>
+        <button class="secundario" onclick="cancelarMesaActual()">Cancelar mesa</button>
+      </div>
+    </div>
+
+    <!-- Vista: resultado -->
+    <div id="vista-resultado" style="display:none;">
+      <div class="panel" style="text-align:center;">
+        <div class="duelo-pvp">
+          <div><div class="sub">Vos</div><div class="carta-visual" id="carta-vos">?</div></div>
+          <div class="vs-pvp">VS</div>
+          <div><div class="sub">Rival</div><div class="carta-visual" id="carta-rival">?</div></div>
+        </div>
+        <div class="mensaje" id="mensaje-resultado"></div>
+        <button onclick="volverAlInicio()">Jugar otra vez</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+
+    // ---- Configuración por tipo de juego en vivo ----
+    const CONFIG_JUEGOS = {
+      carta_alta:    { nombre: "Carta Más Alta",  emoji: "♠️", desc: "Cada uno saca una carta (1-13). La más alta gana.", formatear: n => ({1:'A',11:'J',12:'Q',13:'K'}[n] || n) },
+      dado_simple:   { nombre: "Dado Más Alto",   emoji: "🎲", desc: "Cada uno tira 1 dado (1-6). El número más alto gana.", formatear: n => n },
+      dados_dobles:  { nombre: "Dados Dobles",    emoji: "🎲", desc: "Cada uno tira 2 dados (suma 2-12). La suma más alta gana.", formatear: n => n },
+      numero_suerte: { nombre: "Número de la Suerte", emoji: "🔢", desc: "Cada uno saca un número del 1 al 100. El más alto gana.", formatear: n => n },
+      ruleta_pvp:    { nombre: "Ruleta en Vivo",  emoji: "🎡", desc: "Cada uno gira la ruleta (0-36). El número más alto gana.", formatear: n => n },
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const juego = CONFIG_JUEGOS[params.get("juego")] ? params.get("juego") : "carta_alta";
+    const cfg = CONFIG_JUEGOS[juego];
+
+    document.getElementById("titulo-marca").textContent = `${cfg.emoji} ${cfg.nombre}`;
+    document.getElementById("descripcion-juego").textContent = cfg.desc + " El ganador se lleva x1.9 su apuesta.";
+    document.title = `${cfg.nombre} — SUCE`;
+
+    let mesaActualId = null;
+    let intervaloPoll = null;
+    let desuscribirMesa = null;
+    let ticksMesa = 0;
+
+    async function cargarSaldo() {
+      const n = await obtenerMiSaldo();
+      document.getElementById("saldo").textContent = fmtFichas(n);
+      Mesa.saldoExterno(n);
+    }
+
+    function mostrarVista(nombre) {
+      ["vista-sin-mesa", "vista-esperando", "vista-resultado"].forEach(id => {
+        document.getElementById(id).style.display = id === nombre ? "block" : "none";
+      });
+    }
+
+    async function cargarMesasDisponibles() {
+      const cont = document.getElementById("lista-mesas");
+      try {
+        const mesas = await pvpMesasDisponibles(juego);
+        if (!mesas || mesas.length === 0) {
+          cont.innerHTML = '<p class="sub">No hay mesas esperando ahora. ¡Creá una vos!</p>';
+          return;
+        }
+        cont.innerHTML = mesas.map(m => `
+          <div class="mesa-item">
+            <span class="punto-vivo-chico"></span>
+            <div class="mesa-info"><b>${m.creador_username}</b> apostó 🪙 ${fmtFichas(m.apuesta)}</div>
+            <button onclick="unirseAMesa(${m.id})">Unirme</button>
+          </div>
+        `).join("");
+      } catch (e) {
+        cont.innerHTML = '<p class="sub">No se pudieron cargar las mesas.</p>';
+      }
+    }
+
+    async function crearMesa() {
+      const mensaje = document.getElementById("mensaje-crear");
+      mensaje.textContent = "";
+      if (!Mesa.ctrl || !Mesa.ctrl.valido()) { Mesa.ctrl && Mesa.ctrl.aviso(Mesa.ctrl.valor > Mesa.saldo ? "Tu saldo no alcanza para esta apuesta" : "Revisá el monto de la apuesta"); return; }
+      const apuesta = Mesa.ctrl.valor;
+      try {
+        const mesaId = await pvpCrearMesa(apuesta, juego);
+        mesaActualId = mesaId;
+        document.getElementById("apuesta-esperando").textContent = fmtFichas(apuesta);
+        mostrarVista("vista-esperando");
+        cargarSaldo();
+        // Tiempo real: el servidor avisa apenas alguien se une. Respaldo por polling si no hay WebSocket.
+        if (desuscribirMesa) desuscribirMesa();
+        desuscribirMesa = Realtime.suscribir("mesa:" + mesaId, verificarMiMesa);
+        clearInterval(intervaloPoll);
+        intervaloPoll = setInterval(() => { if (!Realtime.conectado || ++ticksMesa % 8 === 0) verificarMiMesa(); }, 2500);
+      } catch (e) {
+        mensaje.textContent = e.message;
+        mensaje.className = "mensaje perdiste";
+      }
+    }
+
+    function dejarDeEscucharMesa() {
+      clearInterval(intervaloPoll);
+      if (desuscribirMesa) { desuscribirMesa(); desuscribirMesa = null; }
+    }
+
+    async function verificarMiMesa() {
+      if (!mesaActualId) return;
+      try {
+        const data = await pvpEstadoMesa(mesaActualId);
+        if (data.estado === "terminada") {
+          dejarDeEscucharMesa();
+          mostrarResultado(data.carta_creador, data.carta_oponente, data.yo_gane, data.hubo_empate);
+        }
+      } catch (e) {
+        dejarDeEscucharMesa();
+      }
+    }
+
+    async function unirseAMesa(mesaId) {
+      try {
+        const data = await pvpUnirseMesa(mesaId);
+        mostrarResultado(data.carta_creador, data.carta_oponente, data.yo_gane, data.ganador_id === null, true);
+        cargarSaldo();
+      } catch (e) {
+        alert(e.message);
+        cargarMesasDisponibles();
+      }
+    }
+
+    function mostrarResultado(valorCreador, valorOponente, yoGane, huboEmpate, soyOponente = false) {
+      const miValor = soyOponente ? valorOponente : valorCreador;
+      const valorRival = soyOponente ? valorCreador : valorOponente;
+      document.getElementById("carta-vos").textContent = cfg.formatear(miValor);
+      document.getElementById("carta-rival").textContent = cfg.formatear(valorRival);
+
+      const mensaje = document.getElementById("mensaje-resultado");
+      if (huboEmpate) {
+        mensaje.textContent = "Empate — se te devolvió tu apuesta";
+        mensaje.className = "mensaje";
+      } else if (yoGane) {
+        mensaje.textContent = "¡Ganaste la mesa! 🎉";
+        mensaje.className = "mensaje ganaste";
+      } else {
+        mensaje.textContent = "Tu rival ganó esta vez";
+        mensaje.className = "mensaje perdiste";
+      }
+      mostrarVista("vista-resultado");
+      cargarSaldo();
+    }
+
+    async function cancelarMesaActual() {
+      if (!mesaActualId) return;
+      try {
+        await pvpCancelarMesa(mesaActualId);
+      } catch (e) { /* si ya no existe, igual volvemos */ }
+      dejarDeEscucharMesa();
+      volverAlInicio();
+    }
+
+    function volverAlInicio() {
+      mesaActualId = null;
+      mostrarVista("vista-sin-mesa");
+      cargarMesasDisponibles();
+      cargarSaldo();
+    }
+
+    // ---- Lobby en vivo ----
+    function pintarEstadoWS(conectado) {
+      const el = document.getElementById("estado-ws");
+      el.innerHTML = conectado ? '<span style="color:var(--green)">● En vivo</span>' : '<span>○ Reconectando…</span>';
+    }
+    Realtime.alCambiarEstado(pintarEstadoWS);
+    Realtime.suscribir("lobby:" + juego, () => cargarMesasDisponibles());
+
+    // Respaldo: sin WebSocket se consulta cada 4 s; con WebSocket, solo una verificación lenta cada 30 s.
+    let ticksLobby = 0;
+    setInterval(() => { if (!Realtime.conectado || ++ticksLobby % 8 === 0) cargarMesasDisponibles(); }, 4000);
+
+    window.addEventListener("beforeunload", () => Realtime.cerrar());
+    pintarEstadoWS(false);
+    Mesa.iniciar({ juego: "pvp_" + juego, inicial: 1000 });
+    cargarMesasDisponibles();
+  </script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rasca y Gana — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style></style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="juego-wrap">
+      <a href="../index.html" class="volver">← Volver al lobby</a>
+      <div class="juego-top">
+        <div class="marca">🎟️ Rasca y Gana</div>
+        <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+      </div>
+
+      <section class="mesa">
+        <p class="mesa-titulo">Rascá los tres casilleros</p>
+        <div class="rasca-ticket"><h4>SUCE · RASCA Y GANA</h4>
+          <div class="rasca-area" id="area"><div class="rasca-celda">❔</div><div class="rasca-celda">❔</div><div class="rasca-celda">❔</div></div>
+          <div class="rasca-pista" id="pista">Comprá un rasca para empezar</div></div>
+        <div class="resultado" id="resultado"></div>
+      </section>
+
+      <div class="rack-acciones" style="margin-bottom:12px"><button type="button" class="acc" id="btn-revelar" disabled>Revelar todo</button></div>
+
+      <div id="rack"></div>
+      <button class="btn-jugar" id="btn-jugar">Comprar y rascar</button>
+      <div id="mensaje" role="status" style="position:absolute;left:-9999px"></div>
+
+      <details class="reglas">
+        <summary>Cómo se paga</summary>
+        <table class="tabla-premios"><tr><td>👑 👑 👑</td><td>×12</td></tr><tr><td>💎 💎 💎</td><td>×8</td></tr><tr><td>Otros tres iguales</td><td>×4</td></tr><tr><td>Dos iguales</td><td>Recuperás la apuesta</td></tr></table><p style="color:var(--text-dim);font-size:.82rem;margin:0 0 10px">Con 5.000 apostadas, tres coronas pagan 60.000.</p>
+      </details>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+    const area = document.getElementById("area"), pista = document.getElementById("pista"), rev = document.getElementById("btn-revelar");
+    let cv = null, liberar = null;
+    function cubrir() {
+      cv && cv.remove(); cv = document.createElement("canvas");
+      const w = area.clientWidth, h = area.clientHeight, dpr = Math.min(2, devicePixelRatio || 1);
+      cv.width = w * dpr; cv.height = h * dpr; area.appendChild(cv);
+      const g = cv.getContext("2d"); g.scale(dpr, dpr);
+      const gr = g.createLinearGradient(0, 0, w, h); gr.addColorStop(0, "#cbd5e1"); gr.addColorStop(.5, "#94a3b8"); gr.addColorStop(1, "#cbd5e1");
+      g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      g.fillStyle = "rgba(15,23,42,.35)"; g.font = "700 15px Poppins, sans-serif"; g.textAlign = "center"; g.fillText("RASCÁ ACÁ", w / 2, h / 2 + 5);
+      return { g, w, h, dpr };
+    }
+    function habilitarRasca(info, fin) {
+      let usando = false, n = 0;
+      const rascar = (e) => {
+        if (!usando) return; const r = cv.getBoundingClientRect();
+        const x = e.clientX - r.left, y = e.clientY - r.top;
+        info.g.globalCompositeOperation = "destination-out"; info.g.beginPath(); info.g.arc(x, y, 22, 0, 6.283); info.g.fill();
+        if (++n % 8 === 0) { Sonido.tocar("tick"); chequear(); }
+      };
+      function chequear() {
+        const d = info.g.getImageData(0, 0, cv.width, cv.height).data; let vacio = 0, tot = 0;
+        for (let i = 3; i < d.length; i += 160) { tot++; if (d[i] < 30) vacio++; }
+        if (vacio / tot > 0.55) fin();
+      }
+      cv.onpointerdown = (e) => { usando = true; cv.setPointerCapture(e.pointerId); rascar(e); };
+      cv.onpointermove = rascar; cv.onpointerup = () => (usando = false);
+    }
+    Mesa.iniciar({ juego: "rasca", inicial: 1000 });
+    document.getElementById("btn-jugar").onclick = (e) => Mesa.ronda(e.currentTarget, async (apuesta) => {
+      const data = await jugarRasca(apuesta);
+      [...area.querySelectorAll(".rasca-celda")].forEach((c, i) => (c.textContent = data.resultado.simbolos[i]));
+      const info = cubrir(); pista.textContent = "Rascá con el dedo o el mouse";
+      await new Promise((ok) => { liberar = ok; rev.disabled = false; habilitarRasca(info, ok); rev.onclick = ok; });
+      rev.disabled = true; cv.style.transition = "opacity .4s"; cv.style.opacity = 0; setTimeout(() => cv && cv.remove(), 450);
+      pista.textContent = "";
+      await Efectos.esperar(450);
+      Mesa.resultado({ apuesta, ganancia: data.ganancia });
+      Mesa.setSaldo(data.saldo_nuevo);
+    });
+  </script>
+</body>
+</html>
