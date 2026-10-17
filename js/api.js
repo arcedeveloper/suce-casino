@@ -3,7 +3,7 @@
 // En tu PC usa http://localhost:3000; en Render usa el mismo dominio del sitio.
 // =====================================================================
 
-// ⚠️ CAMBIO IMPORTANTE AQUÍ: Si estás en tu PC usa localhost, si estás en GitHub Pages usa Render.
+// ⚠️ CAMBIO IMPORTANTE: En tu PC usa localhost, en GitHub Pages usa Render.
 const API_URL = ["localhost","127.0.0.1"].includes(location.hostname) 
   ? "http://localhost:3000" 
   : "https://suce-casino-backend.onrender.com";
