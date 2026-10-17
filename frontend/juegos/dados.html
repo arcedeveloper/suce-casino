@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dados — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style></style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="juego-wrap">
+      <a href="../index.html" class="volver">← Volver al lobby</a>
+      <div class="juego-top">
+        <div class="marca">🎲 Dados</div>
+        <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+      </div>
+
+      <section class="mesa">
+        <p class="mesa-titulo">Apostá si la suma será alta o baja</p>
+        <div class="dados"><div class="dado" id="d1"></div><div class="dado" id="d2"></div></div>
+        <div class="suma" id="suma"></div>
+        <div class="resultado" id="resultado"></div>
+      </section>
+
+      <div class="opciones" id="opciones">
+        <button type="button" class="opcion" data-v="bajo">Bajo<span class="sub-op">suma de 2 a 6</span></button>
+        <button type="button" class="opcion" data-v="alto">Alto<span class="sub-op">suma de 8 a 12</span></button>
+      </div>
+
+      <div id="rack"></div>
+      <button class="btn-jugar" id="btn-jugar">Tirar dados</button>
+      <div id="mensaje" role="status" style="position:absolute;left:-9999px"></div>
+
+      <details class="reglas">
+        <summary>Cómo se paga</summary>
+        <table class="tabla-premios"><tr><td>Acertás alto o bajo</td><td>×2,2</td></tr><tr><td>Sale 7</td><td>Gana la casa</td></tr></table><p style="color:var(--text-dim);font-size:.82rem;margin:0 0 10px">Con 10.000 apostadas, acertando cobrás 22.000.</p>
+      </details>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+    const d1 = document.getElementById("d1"), d2 = document.getElementById("d2"), suma = document.getElementById("suma");
+    const poner = (n1, n2) => { d1.innerHTML = dadoHTML(n1); d2.innerHTML = dadoHTML(n2); };
+    poner(3, 4);
+    const op = crearOpciones(document.getElementById("opciones"));
+    Mesa.iniciar({ juego: "dados", inicial: 1000 });
+    document.getElementById("btn-jugar").onclick = (e) => {
+      if (!op.valor) { Mesa.ctrl.aviso("Elegí alto o bajo"); return; }
+      Mesa.ronda(e.currentTarget, async (apuesta) => {
+        op.bloquear(true); suma.textContent = "";
+        try {
+          const prom = jugarDados(apuesta, op.valor);
+          d1.classList.add("rueda"); d2.classList.add("rueda");
+          const t = setInterval(() => { poner(1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)); Sonido.tocar("tick"); }, 90);
+          const [data] = await Promise.all([prom, Efectos.esperar(1300)]).catch((er) => { clearInterval(t); d1.classList.remove("rueda"); d2.classList.remove("rueda"); throw er; });
+          clearInterval(t); d1.classList.remove("rueda"); d2.classList.remove("rueda");
+          poner(data.resultado.dado1, data.resultado.dado2);
+          suma.textContent = `Suma: ${data.resultado.suma}`;
+          await Efectos.esperar(350);
+          Mesa.resultado({ apuesta, ganancia: data.ganancia, detalle: data.resultado.suma === 7 ? "Salió 7: gana la casa" : "" });
+          Mesa.setSaldo(data.saldo_nuevo);
+        } finally { op.bloquear(false); }
+      });
+    };
+  </script>
+</body>
+</html>

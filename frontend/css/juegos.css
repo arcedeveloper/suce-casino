@@ -1,0 +1,225 @@
+/* =====================================================================
+   SUCE — kit visual de los juegos (se carga DESPUÉS de styles.css)
+   Una sola idea fuerte: las fichas de casino. Todo lo demás es discreto.
+   ===================================================================== */
+:root {
+  --fieltro-1: #0f3d3a;
+  --fieltro-2: #0a2a2c;
+  --fieltro-3: #071a1f;
+  --riel: rgba(45, 212, 191, 0.26);
+  --neon: #2dd4bf;
+  --neon-suave: #5eead4;
+  --ok: #4ade80;
+  --mal: #f87171;
+}
+
+.juego-wrap { width: 100%; max-width: 760px; margin: 0 auto; }
+
+/* ---------- Barra superior ---------- */
+.juego-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 6px 0 16px; }
+.juego-top .marca { font-family: 'Playfair Display', serif; font-size: 1.35rem; display: flex; align-items: center; gap: 10px; }
+.juego-top .derecha { display: flex; align-items: center; gap: 10px; }
+.saldo-pill {
+  display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 10px; border-radius: 999px;
+  background: rgba(10, 42, 44, 0.8); border: 1px solid var(--riel); font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.saldo-pill .mini-chip { width: 22px; height: 22px; display: block; }
+button.btn-icono {
+  width: 38px; height: 38px; padding: 0; border-radius: 50%; background: rgba(255,255,255,.05); color: var(--text);
+  border: 1px solid rgba(255,255,255,.1); box-shadow: none; font-size: 1rem; line-height: 1;
+}
+button.btn-icono:hover { filter: none; border-color: var(--riel); }
+
+/* ---------- La mesa (fieltro) ---------- */
+.mesa {
+  position: relative; overflow: hidden; border-radius: 24px; padding: 26px 20px 92px; margin-bottom: 14px;
+  background: radial-gradient(120% 95% at 50% 0%, var(--fieltro-1) 0%, var(--fieltro-2) 48%, var(--fieltro-3) 100%);
+  border: 1px solid var(--riel);
+  box-shadow:
+    inset 0 0 0 7px rgba(7, 26, 31, 0.92),
+    inset 0 0 0 8px var(--riel),
+    0 26px 60px rgba(0, 0, 0, 0.55),
+    0 0 70px rgba(45, 212, 191, 0.07);
+}
+.mesa::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .10; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.mesa > * { position: relative; }
+.mesa-titulo { text-align: center; color: rgba(255,255,255,.62); font-size: .86rem; margin: 0 0 14px; min-height: 1.3em; }
+
+/* ---------- Resultado (banner sobre la mesa) ---------- */
+.resultado {
+  position: absolute !important; left: 50%; bottom: 14px; top: auto; transform: translate(-50%, 10px) scale(.92); z-index: 6;
+  width: calc(100% - 36px); max-width: 420px; text-align: center; padding: 10px 14px; border-radius: 16px; opacity: 0; pointer-events: none;
+  background: rgba(4,16,20,.9); border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(4px);
+  transition: opacity .22s ease, transform .28s cubic-bezier(.2,1.4,.4,1);
+}
+.resultado.on { opacity: 1; transform: translate(-50%, 0) scale(1); }
+.resultado .grande { font-family: 'Playfair Display', serif; font-weight: 900; font-size: clamp(1.4rem, 5vw, 1.9rem); letter-spacing: .5px; }
+.resultado .chico { color: rgba(255,255,255,.7); font-size: .9rem; margin-top: 2px; }
+.resultado.gana { border-color: rgba(94,234,212,.55); box-shadow: 0 0 30px rgba(45,212,191,.25); }
+.resultado.gana .grande { color: var(--neon-suave); text-shadow: 0 0 28px rgba(45,212,191,.7); }
+.resultado.pierde .grande { color: var(--mal); }
+.resultado.empata .grande { color: #e2e8f0; }
+canvas.lluvia { position: absolute !important; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 7; }
+
+/* ---------- Fichas de casino ---------- */
+.chip-svg { display: block; width: 100%; height: 100%; filter: drop-shadow(0 4px 6px rgba(0,0,0,.55)); }
+
+/* ---------- Rack de apuesta ---------- */
+.rack {
+  border-radius: 20px; padding: 16px 16px 14px; margin-bottom: 14px;
+  background: linear-gradient(170deg, rgba(29,34,48,.92), rgba(18,22,32,.92));
+  border: 1px solid rgba(255,255,255,.07);
+}
+.rack-top { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 76px; }
+.rack-valor small { display: block; color: var(--text-dim); font-size: .78rem; margin-bottom: 2px; }
+.rack-valor b { font-size: clamp(1.7rem, 7vw, 2.3rem); font-variant-numeric: tabular-nums; letter-spacing: .5px; line-height: 1.1; }
+.rack-valor b.bump { animation: bump .22s ease-out; }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.09); } 100% { transform: scale(1); } }
+
+.pila { display: flex; align-items: flex-end; justify-content: flex-end; min-width: 120px; padding-right: 6px; }
+.pila .p { width: 40px; height: 40px; margin-left: -20px; flex-shrink: 0; animation: caer .24s cubic-bezier(.3,1.5,.5,1); }
+.pila .p:first-child { margin-left: 0; }
+.pila .p:nth-child(odd) { transform: translateY(-3px) rotate(-6deg); }
+.pila .p:nth-child(even) { transform: translateY(2px) rotate(5deg); }
+.pila .extra { margin-left: 8px; align-self: center; color: var(--text-dim); font-size: .8rem; }
+@keyframes caer { from { opacity: 0; translate: 0 -18px; } to { opacity: 1; translate: 0 0; } }
+
+.rack-chips { display: flex; flex-wrap: wrap; gap: 10px 12px; justify-content: center; margin: 12px 0 10px; }
+button.chip {
+  width: 58px; height: 58px; padding: 0; border-radius: 50%; background: none; box-shadow: none; position: relative;
+  transition: transform .12s ease;
+}
+button.chip:hover { filter: none; transform: translateY(-3px); }
+button.chip:active { transform: scale(.92); }
+button.chip:focus-visible, button.acc:focus-visible, .btn-jugar:focus-visible { outline: 2px solid var(--neon-suave); outline-offset: 3px; }
+button.chip[disabled] { opacity: .3; transform: none; }
+
+.rack-acciones { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+button.acc {
+  width: auto; padding: 8px 14px; font-size: .84rem; font-weight: 600; border-radius: 999px; background: rgba(255,255,255,.05);
+  color: var(--text); border: 1px solid rgba(255,255,255,.12); box-shadow: none;
+}
+button.acc:hover { filter: none; border-color: var(--riel); color: var(--neon-suave); }
+.rack-aviso { text-align: center; min-height: 1.3em; margin-top: 8px; font-size: .84rem; color: var(--text-dim); }
+.rack-aviso.mal { color: var(--mal); }
+
+/* ---------- Botón principal ---------- */
+button.btn-jugar {
+  display: block; width: 100%; padding: 17px; border-radius: 16px; font-size: 1.12rem; font-weight: 700; letter-spacing: .4px;
+  background: linear-gradient(135deg, var(--neon-suave), var(--neon) 55%, #0f766e); color: #031614;
+  box-shadow: 0 10px 28px rgba(45,212,191,.28), inset 0 1px 0 rgba(255,255,255,.35);
+}
+button.btn-jugar:disabled { opacity: .55; }
+
+/* ---------- Opciones (cara/cruz, alto/bajo, color) ---------- */
+.opciones { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 6px 0 4px; }
+button.opcion {
+  flex: 1 1 130px; max-width: 220px; width: auto; padding: 13px 10px; border-radius: 14px; font-weight: 600; font-size: .98rem;
+  background: rgba(4,16,20,.55); color: var(--text); border: 1px solid rgba(255,255,255,.14); box-shadow: none;
+  transition: border-color .15s, background .15s, transform .12s;
+}
+button.opcion:hover { filter: none; border-color: var(--riel); }
+button.opcion.sel { border-color: var(--neon-suave); background: rgba(45,212,191,.16); color: #fff; box-shadow: 0 0 0 1px rgba(94,234,212,.5), 0 0 22px rgba(45,212,191,.25); }
+button.opcion .sub-op { display: block; font-weight: 400; font-size: .76rem; opacity: .75; margin-top: 2px; }
+
+/* ---------- Reglas ---------- */
+details.reglas { margin-top: 16px; border-radius: 14px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06); padding: 4px 14px; }
+details.reglas summary { cursor: pointer; padding: 11px 0; color: var(--text-dim); font-weight: 600; font-size: .9rem; }
+details.reglas[open] summary { color: var(--neon-suave); }
+details.reglas .tabla-premios { width: 100%; border-collapse: collapse; margin: 4px 0 10px; font-size: .88rem; }
+details.reglas td { padding: 7px 0; border-top: 1px solid rgba(255,255,255,.06); }
+details.reglas td:last-child { text-align: right; color: var(--neon-suave); font-weight: 700; }
+
+/* ---------- Utilidades ---------- */
+.saldo-flash { animation: saldoFlash .9s ease-out; }
+@media (max-width: 520px) {
+  .mesa { padding: 22px 12px 92px; border-radius: 20px; }
+  button.chip { width: 52px; height: 52px; }
+  .pila { min-width: 90px; }
+  .pila .p { width: 34px; height: 34px; margin-left: -17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* ---------- Cartas ---------- */
+.cartas { display: flex; justify-content: center; align-items: center; gap: 22px; flex-wrap: wrap; padding: 6px 0 4px; perspective: 900px; }
+.cartas .lado { text-align: center; }
+.cartas .lado small { display: block; color: rgba(255,255,255,.6); font-size: .8rem; margin-top: 10px; }
+.cartas .vs { font-family: 'Playfair Display', serif; color: rgba(255,255,255,.35); font-size: 1.2rem; }
+.carta { width: 92px; height: 132px; position: relative; transform-style: preserve-3d; transition: transform .7s cubic-bezier(.3,1.1,.4,1); margin: 0 auto; }
+.carta.abierta { transform: rotateY(180deg); }
+.carta .cara { position: absolute; inset: 0; border-radius: 10px; backface-visibility: hidden; box-shadow: 0 10px 22px rgba(0,0,0,.5); }
+.carta .dorso {
+  background: repeating-linear-gradient(45deg, #0f766e 0 6px, #115e59 6px 12px);
+  border: 5px solid #e6fffb; outline: 1px solid rgba(0,0,0,.35); outline-offset: -5px;
+}
+.carta .frente { transform: rotateY(180deg); background: #f8fafc; color: #0f172a; display: flex; align-items: center; justify-content: center; }
+.carta .frente.rojo { color: #be123c; }
+.carta .esq { position: absolute; top: 7px; left: 9px; display: flex; flex-direction: column; align-items: center; font-size: 1.15rem; line-height: 1; font-family: 'Playfair Display', serif; }
+.carta .esq i { font-style: normal; font-size: .95rem; margin-top: 2px; }
+.carta .esq.inv { top: auto; left: auto; bottom: 7px; right: 9px; transform: rotate(180deg); }
+.carta .palo { font-size: 2.9rem; }
+.carta.ganadora .cara { box-shadow: 0 0 0 2px #5eead4, 0 0 24px rgba(94,234,212,.95); }
+@media (max-width: 520px) { .carta { width: 78px; height: 112px; } .carta .palo { font-size: 2.4rem; } }
+
+/* ---------- Dados ---------- */
+.dados { display: flex; justify-content: center; gap: 22px; padding: 10px 0 4px; }
+.dado {
+  width: 84px; height: 84px; border-radius: 18px; padding: 12px; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  background: linear-gradient(145deg, #ffffff, #cbd5e1); box-shadow: 0 10px 20px rgba(0,0,0,.5), inset 0 -4px 6px rgba(0,0,0,.12);
+}
+.dado i { border-radius: 50%; margin: 3px; }
+.dado i.pt { background: radial-gradient(circle at 35% 30%, #334155, #020617); }
+.dado.rueda { animation: tira .55s ease-in-out infinite; }
+.dado.rueda + .dado.rueda { animation-delay: -.2s; }
+@keyframes tira { 0% { transform: rotate(0) translateY(0); } 25% { transform: rotate(-14deg) translateY(-14px); } 50% { transform: rotate(8deg) translateY(0); } 75% { transform: rotate(14deg) translateY(-8px); } 100% { transform: rotate(0) translateY(0); } }
+.suma { text-align: center; margin-top: 12px; color: rgba(255,255,255,.7); min-height: 1.4em; }
+
+/* ---------- Moneda 3D ---------- */
+.moneda-escena { perspective: 800px; display: flex; justify-content: center; padding: 10px 0; }
+.moneda { width: 130px; height: 130px; position: relative; transform-style: preserve-3d; transition: transform 1.9s cubic-bezier(.2,.7,.2,1); }
+.moneda .lado { position: absolute; inset: 0; border-radius: 50%; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 35% 30%, #99f6e4, #14b8a6 55%, #0f766e); border: 6px double rgba(255,255,255,.75); box-shadow: 0 12px 24px rgba(0,0,0,.5), inset 0 0 18px rgba(0,0,0,.25); color: #042f2e; }
+.moneda .lado b { font-family: 'Playfair Display', serif; font-size: 2.6rem; line-height: 1; }
+.moneda .lado small { font-size: .72rem; font-weight: 700; letter-spacing: 1px; }
+.moneda .cruz { transform: rotateY(180deg); background: radial-gradient(circle at 35% 30%, #e2e8f0, #94a3b8 55%, #475569); }
+
+/* ---------- Ruleta y rueda (SVG que gira) ---------- */
+.rueda-wrap { position: relative; width: min(300px, 78vw); margin: 0 auto; }
+.rueda-wrap svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 12px 20px rgba(0,0,0,.55)); }
+.rueda-gira { transform-origin: 50% 50%; transition: transform 4.6s cubic-bezier(.12,.62,.12,1); }
+.rueda-flecha { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; z-index: 3;
+  border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 22px solid #f8fafc; filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
+.numero-grande { text-align: center; margin-top: 12px; min-height: 2.6rem; font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 800; }
+.numero-grande.rojo { color: #fb7185; } .numero-grande.negro { color: #e2e8f0; } .numero-grande.verde { color: var(--ok); }
+.rueda-etiqueta { text-align: center; margin-top: 12px; min-height: 2.2rem; font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 800; color: var(--neon-suave); }
+.num-input { width: 100%; max-width: 160px; margin: 8px auto 0; display: block; text-align: center; font-size: 1.3rem; font-weight: 700; padding: 10px; border-radius: 12px;
+  background: rgba(4,16,20,.6); border: 1px solid rgba(255,255,255,.16); color: var(--text); }
+.pestañas { display: flex; gap: 8px; justify-content: center; margin: 4px 0 12px; }
+
+/* ---------- Keno ---------- */
+.keno-grilla { display: grid; grid-template-columns: repeat(8, 1fr); gap: 7px; max-width: 460px; margin: 0 auto; }
+.keno-grilla button { aspect-ratio: 1; padding: 0; border-radius: 50%; font-weight: 700; font-size: .95rem; background: rgba(4,16,20,.6); color: var(--text);
+  border: 1px solid rgba(255,255,255,.14); box-shadow: none; transition: transform .12s, background .2s, box-shadow .2s; }
+.keno-grilla button:hover { filter: none; border-color: var(--riel); }
+.keno-grilla button.mio { border-color: var(--neon-suave); background: rgba(45,212,191,.2); box-shadow: 0 0 0 1px rgba(94,234,212,.55); }
+.keno-grilla button.bola { background: radial-gradient(circle at 35% 30%, #f8fafc, #94a3b8); color: #0f172a; transform: scale(1.08); animation: sale .4s cubic-bezier(.3,1.6,.5,1); }
+.keno-grilla button.acierto { background: radial-gradient(circle at 35% 30%, #99f6e4, #0d9488); color: #042f2e; box-shadow: 0 0 18px rgba(94,234,212,.9); }
+@keyframes sale { from { transform: scale(.4); } to { transform: scale(1.08); } }
+.keno-info { text-align: center; margin-top: 12px; min-height: 1.4em; color: rgba(255,255,255,.7); font-size: .9rem; }
+
+/* ---------- Rasca ---------- */
+.rasca-ticket { max-width: 380px; margin: 0 auto; padding: 14px; border-radius: 18px; background: linear-gradient(160deg, #115e59, #0b3b3e); border: 1px solid var(--riel); box-shadow: 0 14px 30px rgba(0,0,0,.45); }
+.rasca-ticket h4 { margin: 0 0 10px; text-align: center; font-family: 'Playfair Display', serif; font-weight: 800; color: #ccfbf1; letter-spacing: .5px; }
+.rasca-area { position: relative; display: flex; gap: 10px; border-radius: 12px; overflow: hidden; }
+.rasca-celda { flex: 1; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; background: #f0fdfa; border-radius: 10px; box-shadow: inset 0 3px 8px rgba(0,0,0,.2); }
+.rasca-area canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.rasca-pista { text-align: center; margin-top: 10px; color: rgba(255,255,255,.7); font-size: .85rem; min-height: 1.3em; }
+
+/* ---------- Rueda de la suerte ---------- */
+.premio-flash { animation: premioFlash .9s ease-out; }
+@keyframes premioFlash { 0% { transform: scale(1); } 40% { transform: scale(1.12); } 100% { transform: scale(1); } }

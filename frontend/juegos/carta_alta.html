@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carta Más Alta — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style></style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="juego-wrap">
+      <a href="../index.html" class="volver">← Volver al lobby</a>
+      <div class="juego-top">
+        <div class="marca">🃏 Carta Más Alta</div>
+        <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+      </div>
+
+      <section class="mesa">
+        <p class="mesa-titulo">Tu carta contra la de la casa</p>
+        <div class="cartas">
+          <div class="lado"><div id="c-yo"></div><small>Tu carta</small></div>
+          <div class="vs">VS</div>
+          <div class="lado"><div id="c-casa"></div><small>La casa</small></div>
+        </div>
+        <div class="resultado" id="resultado"></div>
+      </section>
+
+
+      <div id="rack"></div>
+      <button class="btn-jugar" id="btn-jugar">Repartir</button>
+      <div id="mensaje" role="status" style="position:absolute;left:-9999px"></div>
+
+      <details class="reglas">
+        <summary>Cómo se paga</summary>
+        <table class="tabla-premios"><tr><td>Tu carta es mayor</td><td>×1,9</td></tr><tr><td>Empate o menor</td><td>Pierde</td></tr></table><p style="color:var(--text-dim);font-size:.82rem;margin:0 0 10px">El orden va de A (la más baja) a K (la más alta).</p>
+      </details>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+    const yo = document.getElementById("c-yo"), casa = document.getElementById("c-casa");
+    yo.innerHTML = cartaHTML(0); casa.innerHTML = cartaHTML(0);
+    Mesa.iniciar({ juego: "carta_alta", inicial: 1000 });
+    document.getElementById("btn-jugar").onclick = (e) => Mesa.ronda(e.currentTarget, async (apuesta) => {
+      yo.innerHTML = cartaHTML(0); casa.innerHTML = cartaHTML(0);
+      const data = await jugarCartaAlta(apuesta);
+      await Efectos.esperar(250);
+      yo.innerHTML = cartaHTML(data.resultado.carta_jugador); void yo.offsetWidth; yo.firstElementChild.classList.add("abierta"); Sonido.tocar("tick");
+      await Efectos.esperar(Efectos.reducido ? 0 : 800);
+      casa.innerHTML = cartaHTML(data.resultado.carta_casa); void casa.offsetWidth; casa.firstElementChild.classList.add("abierta"); Sonido.tocar("tick");
+      await Efectos.esperar(Efectos.reducido ? 0 : 900);
+      if (data.ganancia > 0) yo.firstElementChild.classList.add("ganadora");
+      Mesa.resultado({ apuesta, ganancia: data.ganancia });
+      Mesa.setSaldo(data.saldo_nuevo);
+    });
+  </script>
+</body>
+</html>

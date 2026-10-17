@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Panel Admin — SUCE</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .adm { max-width: 1200px; }
+  .adm-top { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .adm-top .acciones { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .adm-top .acciones button { width:auto; padding:9px 16px; white-space:nowrap; }
+  @media (max-width:560px) {
+    .kpis { grid-template-columns:repeat(2,1fr); gap:10px; }
+    .kpi { padding:13px 12px; } .kpi .k-val { font-size:1.3rem; } .kpi .k-sub { font-size:.72rem; }
+    .adm-top .acciones { width:100%; } .actualizado { flex-basis:100%; }
+  }
+  .actualizado { color:var(--text-dim); font-size:.78rem; }
+
+  .tabs-adm { display:flex; gap:6px; margin-bottom:18px; border-bottom:1px solid rgba(255,255,255,.07); overflow-x:auto; }
+  .tabs-adm button {
+    width:auto; background:transparent; color:var(--text-dim); box-shadow:none; border-radius:10px 10px 0 0;
+    padding:11px 18px; font-weight:600; white-space:nowrap; border-bottom:2px solid transparent;
+  }
+  .tabs-adm button:hover { color:var(--text); filter:none; }
+  .tabs-adm button.on { color:var(--gold-soft); border-bottom-color:var(--gold); background:rgba(45,212,191,.06); }
+
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-bottom:16px; }
+  .kpi { background:linear-gradient(160deg,var(--bg-card-2),var(--bg-card)); border:1px solid rgba(255,255,255,.06);
+         border-radius:14px; padding:16px 16px 14px; }
+  .kpi .k-label { color:var(--text-dim); font-size:.74rem; text-transform:uppercase; letter-spacing:1.2px; }
+  .kpi .k-val { font-size:1.65rem; font-weight:800; margin:6px 0 2px; letter-spacing:.3px; }
+  .kpi .k-sub { color:var(--text-dim); font-size:.78rem; }
+  .kpi.pos .k-val { color:var(--green); }
+  .kpi.neg .k-val { color:var(--red); }
+  .kpi.acc .k-val { color:var(--gold-soft); }
+
+  .dos-col { display:grid; grid-template-columns:1.4fr 1fr; gap:16px; }
+  @media (max-width:860px) { .dos-col { grid-template-columns:1fr; } }
+
+  .barras { display:flex; align-items:flex-end; gap:10px; height:190px; padding-top:10px; }
+  .barras .dia { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; min-width:0; }
+  .barras .par { display:flex; align-items:flex-end; gap:3px; width:100%; height:100%; justify-content:center; }
+  .barras .b { width:42%; max-width:26px; min-height:2px; border-radius:5px 5px 0 0; }
+  .barras .b.ap { background:linear-gradient(180deg,var(--gold-soft),var(--gold-deep)); }
+  .barras .b.pr { background:linear-gradient(180deg,#f0abfc,#7c3aed); }
+  .barras .et { font-size:.7rem; color:var(--text-dim); margin-top:6px; }
+  .leyenda { display:flex; gap:16px; font-size:.78rem; color:var(--text-dim); margin-top:10px; }
+  .leyenda i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
+
+  .hbar { margin-bottom:11px; }
+  .hbar .fila { display:flex; justify-content:space-between; font-size:.85rem; margin-bottom:4px; }
+  .hbar .fila span:last-child { color:var(--text-dim); }
+  .hbar .riel { height:8px; background:rgba(255,255,255,.06); border-radius:6px; overflow:hidden; }
+  .hbar .riel div { height:100%; background:linear-gradient(90deg,var(--gold-deep),var(--gold-soft)); border-radius:6px; }
+
+  .toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .toolbar input, .toolbar select { margin:0; width:auto; min-width:0; flex:1 1 180px; padding:10px 12px; box-sizing:border-box; }
+  .toolbar button { width:auto; padding:10px 16px; }
+  .tabla-wrap { overflow-x:auto; border:1px solid rgba(255,255,255,.06); border-radius:12px; }
+  table.t { width:100%; border-collapse:collapse; min-width:900px; font-size:.88rem; }
+  table.t th { text-align:left; color:var(--text-dim); font-weight:600; font-size:.72rem; text-transform:uppercase; letter-spacing:1px;
+               padding:11px 12px; background:rgba(255,255,255,.03); white-space:nowrap; position:sticky; top:0; }
+  table.t td { padding:10px 12px; border-top:1px solid rgba(255,255,255,.05); white-space:nowrap; }
+  table.t tr:hover td { background:rgba(255,255,255,.025); }
+  table.t td.num, table.t th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .pos { color:var(--green); } .neg { color:var(--red); } .dim { color:var(--text-dim); }
+  .u-nombre { font-weight:700; }
+  .u-nombre small { display:block; color:var(--text-dim); font-weight:400; font-size:.72rem; }
+  .mini { width:auto; padding:6px 10px; font-size:.78rem; border-radius:8px; margin-right:4px; }
+  .mini.peligro { background:linear-gradient(135deg,#f87171,#b91c1c); color:#fff; box-shadow:none; }
+  .mini.ok { background:linear-gradient(135deg,#4ade80,#15803d); color:#04210f; box-shadow:none; }
+  .mini.sec { background:transparent; border:1px solid rgba(255,255,255,.14); color:var(--text); box-shadow:none; }
+  .vacio { padding:28px; text-align:center; color:var(--text-dim); }
+
+  .form-fila { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; align-items:end; }
+  .form-fila input { margin:0; }
+  .form-fila label { display:block; color:var(--text-dim); font-size:.74rem; margin-bottom:4px; }
+
+  .velo { position:fixed; inset:0; background:rgba(3,6,10,.72); backdrop-filter:blur(4px); display:none; align-items:flex-start;
+          justify-content:center; padding:5vh 14px; overflow-y:auto; z-index:50; }
+  .velo.abierto { display:flex; }
+  #modal-accion { z-index:60; align-items:center; }
+  .caja { width:100%; max-width:640px; background:linear-gradient(160deg,var(--bg-card-2),var(--bg-card)); border:1px solid rgba(45,212,191,.25);
+          border-radius:18px; padding:22px 20px; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+  .caja.chica { max-width:400px; }
+  .caja h3 { margin:0 0 4px; font-family:'Playfair Display',serif; color:var(--gold-soft); }
+  .caja .cerrar { float:right; width:auto; padding:4px 11px; }
+  .resumen { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin:14px 0; }
+  .resumen div { background:rgba(255,255,255,.04); border-radius:10px; padding:10px 12px; }
+  .resumen small { display:block; color:var(--text-dim); font-size:.7rem; text-transform:uppercase; letter-spacing:1px; }
+  .resumen b { font-size:1.1rem; }
+  .movs { max-height:280px; overflow-y:auto; border:1px solid rgba(255,255,255,.06); border-radius:10px; }
+  .movs table { min-width:0; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+  .chips button { width:auto; padding:6px 12px; font-size:.82rem; }
+  .btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .btns button { width:auto; padding:10px 16px; }
+
+  .oculto { display:none !important; }
+  .dot-on, .dot-off { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:7px; vertical-align:1px; }
+  .dot-on { background:var(--green); box-shadow:0 0 8px var(--green); }
+  .dot-off { background:rgba(255,255,255,.16); }
+  @keyframes filaFlash { 0% { background:rgba(45,212,191,.30); } 100% { background:transparent; } }
+  tr.flash td, tr.feed-nuevo td { animation:filaFlash 1.3s ease-out; }
+  .aviso-err { background:rgba(229,72,77,.12); border:1px solid rgba(229,72,77,.4); color:#fecaca; padding:10px 14px;
+               border-radius:10px; margin-bottom:14px; font-size:.88rem; }
+</style>
+</head>
+<body>
+  <div class="contenedor adm">
+    <div class="adm-top">
+      <div class="marca">
+        <span class="logo-c" style="--s:34px" role="img" aria-label="Logo SUCE"></span>
+        SUCE Admin
+      </div>
+      <div class="acciones">
+        <span class="actualizado" id="actualizado">Cargando…</span>
+        <button class="secundario" onclick="cargarTodo(true)">⟳ Actualizar</button>
+        <button class="secundario" onclick="Auth.cerrarSesion()">Salir</button>
+      </div>
+    </div>
+
+    <div class="tabs-adm">
+      <button class="on" data-tab="resumen" onclick="irTab('resumen')">📊 Resumen</button>
+      <button data-tab="jugadores" onclick="irTab('jugadores')">👥 Jugadores</button>
+      <button data-tab="actividad" onclick="irTab('actividad')">⚡ Actividad</button>
+      <button data-tab="juegos" onclick="irTab('juegos')">🎮 Juegos y límites</button>
+    </div>
+
+    <div id="error-global" class="aviso-err oculto"></div>
+    <section id="tab-resumen">
+      <div class="kpis" id="kpis"></div>
+
+      <div class="dos-col">
+        <div class="panel" style="margin:0;">
+          <h3 style="margin-top:0;">Últimos 7 días</h3>
+          <div class="barras" id="barras-dias"></div>
+          <div class="leyenda"><span><i style="background:var(--gold)"></i>Apostado</span><span><i style="background:#a855f7"></i>Premios pagados</span></div>
+        </div>
+        <div class="panel" style="margin:0;">
+          <h3 style="margin-top:0;">Juegos más jugados</h3>
+          <div id="por-juego"></div>
+        </div>
+      </div>
+    </section>
+    <section id="tab-jugadores" class="oculto">
+      <div class="panel">
+        <h3 style="margin-top:0;">➕ Nuevo jugador</h3>
+        <div class="form-fila">
+          <div><label>Usuario</label><input type="text" id="nuevo-username" placeholder="ej: juan" autocomplete="off"></div>
+          <div><label>Contraseña temporal</label><input type="text" id="nuevo-password" placeholder="mín. 4 caracteres" autocomplete="off"></div>
+          <div><label>Fichas iniciales (opcional)</label><input type="number" id="nuevo-fichas" placeholder="0" min="0"></div>
+          <div><button onclick="crearUsuario()">Crear jugador</button></div>
+        </div>
+        <div class="mensaje" id="mensaje-crear"></div>
+      </div>
+
+      <div class="panel">
+        <div class="toolbar">
+          <input type="search" id="buscar" placeholder="🔍 Buscar jugador…" oninput="renderUsuarios()">
+          <select id="filtro" onchange="renderUsuarios()">
+            <option value="todos">Todos</option>
+            <option value="activos">Solo activos</option>
+            <option value="online">Solo en línea ahora</option>
+            <option value="bloqueados">Solo bloqueados</option>
+          </select>
+          <select id="orden" onchange="renderUsuarios()">
+            <option value="reciente">Más recientes</option>
+            <option value="saldo">Mayor saldo</option>
+            <option value="gastado">Más fichas gastadas</option>
+            <option value="jugadas">Más jugadas</option>
+            <option value="neto_asc">Más pérdidas (neto)</option>
+            <option value="neto_desc">Más ganancias (neto)</option>
+            <option value="actividad">Última actividad</option>
+          </select>
+          <button class="secundario" onclick="exportarExcel()">⬇ Excel</button>
+        </div>
+        <div class="tabla-wrap">
+          <table class="t">
+            <thead><tr>
+              <th>Jugador</th><th class="num">Saldo</th><th class="num">Cargado</th><th class="num">Gastado</th>
+              <th class="num">Ganado</th><th class="num">Neto</th><th class="num">Jugadas</th><th>Última actividad</th><th>Estado</th><th>Acciones</th>
+            </tr></thead>
+            <tbody id="tbody-usuarios"><tr><td colspan="10" class="vacio">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="sub" style="margin-top:10px;">Neto = lo que el jugador ganó menos lo que apostó. Negativo = el jugador va perdiendo fichas.</p>
+      </div>
+    </section>
+
+    <section id="tab-juegos" class="oculto">
+      <div class="panel">
+        <h3 style="margin-top:0;">Límites de apuesta por juego</h3>
+        <p class="sub" style="margin-top:-6px;">Se aplican en el servidor: nadie puede apostar fuera de este rango, aunque modifique la página. Los premios son siempre un múltiplo de lo apostado.</p>
+        <div class="tabla-wrap">
+          <table class="t" style="min-width:640px;">
+            <thead><tr><th>Juego</th><th class="num">Apuesta mínima</th><th class="num">Apuesta máxima</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="tbody-juegos"><tr><td colspan="5" class="vacio">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="mensaje" id="mensaje-juegos"></div>
+      </div>
+    </section>
+    <section id="tab-actividad" class="oculto">
+      <div class="panel">
+        <h3 style="margin-top:0;">Últimas partidas <span class="sub" style="font-weight:400; font-size:.75rem;">· en vivo</span></h3>
+        <div class="tabla-wrap">
+          <table class="t" style="min-width:600px;">
+            <thead><tr><th>Cuándo</th><th>Jugador</th><th>Juego</th><th class="num">Apostó</th><th class="num">Cobró</th><th class="num">Resultado</th></tr></thead>
+            <tbody id="tbody-actividad"><tr><td colspan="6" class="vacio">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="velo" id="modal-detalle" onclick="if(event.target===this)cerrarDetalle()">
+    <div class="caja">
+      <button class="secundario cerrar" onclick="cerrarDetalle()">✕</button>
+      <h3 id="det-titulo">Jugador</h3>
+      <div class="sub" id="det-sub"></div>
+      <div class="resumen" id="det-resumen"></div>
+      <div class="btns" style="margin:0 0 14px;">
+        <button class="mini" style="padding:9px 14px;font-size:.85rem;" onclick="abrirAccion('cargar', detId)">＋ Cargar fichas</button>
+        <button class="mini sec" style="padding:9px 14px;font-size:.85rem;" onclick="abrirAccion('quitar', detId)">－ Quitar fichas</button>
+        <button class="mini sec" style="padding:9px 14px;font-size:.85rem;" onclick="abrirAccion('password', detId)">🔑 Nueva contraseña</button>
+        <button class="mini" id="det-bloquear" style="padding:9px 14px;font-size:.85rem;" onclick="alternarBloqueo(detId)"></button>
+      </div>
+      <h4 style="margin:6px 0 8px; color:var(--gold-soft);">Por juego</h4>
+      <div id="det-juegos" style="margin-bottom:14px;"></div>
+      <h4 style="margin:6px 0 8px; color:var(--gold-soft);">Últimos movimientos</h4>
+      <div class="movs"><table class="t"><tbody id="det-movs"></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="velo" id="modal-accion" onclick="if(event.target===this)cerrarAccion()">
+    <div class="caja chica">
+      <h3 id="acc-titulo"></h3>
+      <div class="sub" id="acc-desc" style="margin-bottom:12px;"></div>
+      <div class="chips" id="acc-chips"></div>
+      <input type="number" id="acc-monto" min="1" placeholder="Cantidad de fichas (ej: 10000)">
+      <input type="text" id="acc-pass" placeholder="Nueva contraseña (mín. 4)" class="oculto" autocomplete="off">
+      <div class="mensaje" id="acc-msg"></div>
+      <div class="btns">
+        <button id="acc-ok" onclick="confirmarAccion()">Confirmar</button>
+        <button class="secundario" onclick="cerrarAccion()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    Auth.requiereSesion("admin");
+
+    const $ = (id) => document.getElementById(id);
+    const fmt = (n) => Number(n || 0).toLocaleString("es-PY");
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    const signo = (n) => (n > 0 ? "+" : "") + fmt(n);
+    const clase = (n) => (n > 0 ? "pos" : n < 0 ? "neg" : "dim");
+    const NOMBRES = {
+      tragamonedas:"🎰 Tragamonedas", moneda:"🪙 Cara o Cruz", dados:"🎲 Dados", hilo:"📈 Alto o Bajo",
+      carta_alta:"🃏 Carta Más Alta", ruleta:"🎡 Ruleta", keno:"🔢 Keno", rasca:"🎟️ Rasca y Gana", rueda:"🎯 Rueda de la Suerte"
+    };
+    const nombreJuego = (id) => NOMBRES[id] || id;
+    const TZ = "America/Asuncion";
+    const fechaHora = (t) => t ? new Date(t).toLocaleString("es-PY", { timeZone: TZ, day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "—";
+    function hace(t) {
+      if (!t) return "nunca";
+      const s = Math.max(0, (Date.now() - new Date(t).getTime()) / 1000);
+      if (s < 60) return "hace instantes";
+      if (s < 3600) return `hace ${Math.floor(s / 60)} min`;
+      if (s < 86400) return `hace ${Math.floor(s / 3600)} h`;
+      return `hace ${Math.floor(s / 86400)} d`;
+    }
+    function mostrarError(msg) {
+      const el = $("error-global");
+      el.textContent = msg || "";
+      el.classList.toggle("oculto", !msg);
+    }
+    function aviso(el, texto, ok) {
+      el.textContent = texto;
+      el.className = "mensaje " + (ok ? "ganaste" : "perdiste");
+    }
+
+    let usuarios = [];
+    let metricas = null;
+    let actividad = [];
+    let online = new Set();          
+    const flashIds = new Set();      
+    let tabActual = "resumen";
+    let detId = null;
+
+    function irTab(t) {
+      tabActual = t;
+      ["resumen", "jugadores", "actividad", "juegos"].forEach((x) => {
+        $("tab-" + x).classList.toggle("oculto", x !== t);
+      });
+      document.querySelectorAll(".tabs-adm button").forEach((b) => b.classList.toggle("on", b.dataset.tab === t));
+    }
+
+async function cargarTodo(manual) {
+  try {
+    if (manual) cargarCatalogo();  
+    const [m, u, a] = await Promise.all([adminMetricas(), adminListaUsuarios(), adminActividad(40)]);
+    metricas = m; usuarios = u; actividad = a;
+    renderKPIs(); renderGraficos(); renderUsuarios(); renderActividad();
+    mostrarError("");
+    $("actualizado").dataset.base = "Actualizado " + new Date().toLocaleTimeString("es-PY", { timeZone: TZ });
+    pintarEnVivo();
+  } catch (e) {
+    mostrarError("No se pudo cargar: " + e.message);
+    $("actualizado").textContent = "Error al actualizar";
+  }
+}
+    const conectados = () => usuarios.filter((u) => u.rol === "jugador" && online.has(u.id)).length;
+
+    function renderKPIs() {
+      const m = metricas;
+      const casa = m.total_apostado - m.total_premios;
+      const rtp = m.total_apostado > 0 ? Math.round((m.total_premios / m.total_apostado) * 1000) / 10 : 0;
+      const k = [
+        ["Jugadores", fmt(m.jugadores_total), `${fmt(m.jugadores_activos)} activos · ${fmt(m.jugadores_bloqueados)} bloqueados`, "acc"],
+        ["En línea ahora", fmt(conectados()), "Jugadores con la página abierta", "acc"],
+        ["Fichas en circulación", fmt(m.fichas_circulacion), "Saldo total de todos los jugadores", "acc"],
+        ["Fichas cargadas", fmt(m.fichas_cargadas), "Total entregado desde el admin", ""],
+        ["Total apostado", fmt(m.total_apostado), `${fmt(m.partidas_total)} jugadas en total`, ""],
+        ["Premios pagados", fmt(m.total_premios), `Retorno a jugadores: ${rtp}%`, ""],
+        ["Resultado de la casa", signo(casa), "Apostado − premios", casa >= 0 ? "pos" : "neg"],
+        ["Jugadas hoy", fmt(m.partidas_hoy), `${fmt(m.jugadores_hoy)} jugadores distintos hoy`, ""],
+        ["Mesas en vivo", fmt(m.mesas_abiertas), `${fmt(m.mesas_jugadas)} mesas jugadas en total`, ""],
+      ];
+      $("kpis").innerHTML = k.map(([l, v, s, c]) =>
+        `<div class="kpi ${c}"><div class="k-label">${l}</div><div class="k-val">${v}</div><div class="k-sub">${s}</div></div>`).join("");
+    }
+
+    function renderGraficos() {
+      const dias = metricas.por_dia || [];
+      const max = Math.max(1, ...dias.map((d) => Math.max(d.apostado, d.premios)));
+      $("barras-dias").innerHTML = dias.map((d) => {
+        const [, mm, dd] = d.dia.slice(0, 10).split("-");
+        return `<div class="dia" title="${dd}/${mm}: apostado ${fmt(d.apostado)} · premios ${fmt(d.premios)} · ${d.partidas} jugadas">
+          <div class="par">
+            <div class="b ap" style="height:${(d.apostado / max) * 100}%"></div>
+            <div class="b pr" style="height:${(d.premios / max) * 100}%"></div>
+          </div><div class="et">${dd}/${mm}</div></div>`;
+      }).join("");
+
+      const juegos = metricas.por_juego || [];
+      const mj = Math.max(1, ...juegos.map((j) => j.partidas));
+      $("por-juego").innerHTML = juegos.length
+        ? juegos.map((j) => `<div class="hbar"><div class="fila"><span>${esc(nombreJuego(j.juego))}</span><span>${fmt(j.partidas)} jugadas · ${fmt(j.apostado)} apostadas</span></div>
+            <div class="riel"><div style="width:${(j.partidas / mj) * 100}%"></div></div></div>`).join("")
+        : `<div class="vacio">Todavía no hubo partidas.</div>`;
+    }
+    function usuariosFiltrados() {
+      const q = $("buscar").value.trim().toLowerCase();
+      const f = $("filtro").value;
+      const o = $("orden").value;
+      let l = usuarios.filter((u) => u.rol === "jugador");
+      if (q) l = l.filter((u) => u.username.toLowerCase().includes(q));
+      if (f === "activos") l = l.filter((u) => u.activo);
+      if (f === "bloqueados") l = l.filter((u) => !u.activo);
+      if (f === "online") l = l.filter((u) => online.has(u.id));
+      const por = {
+        reciente: (a, b) => new Date(b.creado_en) - new Date(a.creado_en),
+        saldo: (a, b) => b.saldo - a.saldo,
+        gastado: (a, b) => b.gastado - a.gastado,
+        jugadas: (a, b) => b.jugadas - a.jugadas,
+        neto_asc: (a, b) => a.neto - b.neto,
+        neto_desc: (a, b) => b.neto - a.neto,
+        actividad: (a, b) => new Date(b.ultima_actividad || 0) - new Date(a.ultima_actividad || 0),
+      };
+      return l.sort(por[o]);
+    }
+
+    function renderUsuarios() {
+      const l = usuariosFiltrados();
+      $("tbody-usuarios").innerHTML = l.length ? l.map((u) => `
+        <tr class="${flashIds.has(u.id) ? "flash" : ""}">
+          <td class="u-nombre">${online.has(u.id) ? '<span class="dot-on" title="En línea ahora"></span>' : '<span class="dot-off" title="Desconectado"></span>'}${esc(u.username)}<small style="padding-left:15px;">creado ${esc(new Date(u.creado_en).toLocaleDateString("es-PY", { timeZone: TZ }))}</small></td>
+          <td class="num"><b>${fmt(u.saldo)}</b></td>
+          <td class="num dim">${fmt(u.cargado)}</td>
+          <td class="num">${fmt(u.gastado)}</td>
+          <td class="num">${fmt(u.ganado)}</td>
+          <td class="num ${clase(u.neto)}">${signo(u.neto)}</td>
+          <td class="num">${fmt(u.jugadas)}</td>
+          <td class="dim">${hace(u.ultima_actividad)}</td>
+          <td><span class="badge ${u.activo ? "activo" : "inactivo"}">${u.activo ? "Activo" : "Bloqueado"}</span></td>
+          <td>
+            <button class="mini" onclick="abrirAccion('cargar','${u.id}')">＋ Fichas</button>
+            <button class="mini sec" onclick="verDetalle('${u.id}')">Ver</button>
+            <button class="mini ${u.activo ? "peligro" : "ok"}" onclick="alternarBloqueo('${u.id}')">${u.activo ? "Bloquear" : "Desbloquear"}</button>
+          </td>
+        </tr>`).join("")
+        : `<tr><td colspan="10" class="vacio">No hay jugadores que coincidan. Creá uno arriba 👆</td></tr>`;
+      if (flashIds.size) setTimeout(() => flashIds.clear(), 1400);
+    }
+    const _crcTabla = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+    const _crc32 = (b) => { let c = 0xffffffff; for (let i = 0; i < b.length; i++) c = _crcTabla[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+    function _zip(archivos) {          // archivos: [{ nombre, texto }] → Uint8Array (zip sin compresión)
+      const enc = new TextEncoder(), partes = [], central = []; let pos = 0;
+      for (const a of archivos) {
+        const nom = enc.encode(a.nombre), dat = enc.encode(a.texto), crc = _crc32(dat);
+        const lh = new DataView(new ArrayBuffer(30)); lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
+        lh.setUint32(14, crc, true); lh.setUint32(18, dat.length, true); lh.setUint32(22, dat.length, true); lh.setUint16(26, nom.length, true);
+        partes.push(new Uint8Array(lh.buffer), nom, dat);
+        const ch = new DataView(new ArrayBuffer(46)); ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+        ch.setUint32(16, crc, true); ch.setUint32(20, dat.length, true); ch.setUint32(24, dat.length, true); ch.setUint16(28, nom.length, true); ch.setUint32(42, pos, true);
+        central.push(new Uint8Array(ch.buffer), nom);
+        pos += 30 + nom.length + dat.length;
+      }
+      const tamCentral = central.reduce((s, p) => s + p.length, 0);
+      const fin = new DataView(new ArrayBuffer(22)); fin.setUint32(0, 0x06054b50, true); fin.setUint16(8, archivos.length, true); fin.setUint16(10, archivos.length, true);
+      fin.setUint32(12, tamCentral, true); fin.setUint32(16, pos, true);
+      const todo = [...partes, ...central, new Uint8Array(fin.buffer)], out = new Uint8Array(todo.reduce((s, p) => s + p.length, 0)); let o = 0;
+      for (const p of todo) { out.set(p, o); o += p.length; }
+      return out;
+    }
+    function _xlsx(nombreHoja, columnas, filas) {
+      const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      const col = (i) => String.fromCharCode(65 + i);
+      const txt = (ref, v, st) => `<c r="${ref}"${st ? ` s="${st}"` : ""} t="inlineStr"><is><t>${esc(v)}</t></is></c>`;
+      let xml = `<row r="1">` + columnas.map((c, i) => txt(`${col(i)}1`, c.titulo, 0)).join("") + `</row>`;
+      filas.forEach((f, r) => {
+        xml += `<row r="${r + 2}">` + columnas.map((c, i) => {
+          const v = f[i], ref = `${col(i)}${r + 2}`;
+          if (v === null || v === undefined || v === "") return "";
+          if (c.tipo === "texto") return txt(ref, v, 2);
+          return `<c r="${ref}" s="${c.tipo === "fecha" ? 1 : 2}"><v>${v}</v></c>`;
+        }).join("") + `</row>`;
+      });
+      const hoja = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
+        + `<sheetFormatPr defaultRowHeight="15"/>`
+        + `<cols>` + columnas.map((c, i) => `<col min="${i + 1}" max="${i + 1}" width="${c.ancho}" customWidth="1"/>`).join("") + `</cols>`
+        + `<sheetData>${xml}</sheetData></worksheet>`;
+      const estilos = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
+        + `<numFmts count="1"><numFmt numFmtId="165" formatCode="dd/mm/yyyy\\ hh:mm"/></numFmts>`
+        + `<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>`
+        + `<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>`
+        + `<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>`
+        + `<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>`
+        + `<cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>`
+        + `<xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="center"/></xf>`
+        + `<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="center"/></xf></cellXfs>`
+        + `<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+      const R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+      return _zip([
+        { nombre: "[Content_Types].xml", texto: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>` },
+        { nombre: "_rels/.rels", texto: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${R}/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
+        { nombre: "xl/workbook.xml", texto: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="${R}"><sheets><sheet name="${esc(nombreHoja)}" sheetId="1" r:id="rId1"/></sheets></workbook>` },
+        { nombre: "xl/_rels/workbook.xml.rels", texto: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${R}/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${R}/styles" Target="styles.xml"/></Relationships>` },
+        { nombre: "xl/styles.xml", texto: estilos },
+        { nombre: "xl/worksheets/sheet1.xml", texto: hoja },
+      ]);
+    }
+    function exportarExcel() {
+      const serial = (t) => {
+        if (!t) return "";
+        const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+          .formatToParts(new Date(t)).map((x) => [x.type, x.value]));
+        return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute) / 86400000 + 25569;
+      };
+      const columnas = [
+        { titulo: "Usuario", ancho: 24, tipo: "texto" }, { titulo: "Saldo", ancho: 20, tipo: "num" },
+        { titulo: "Fichas cargadas", ancho: 24, tipo: "num" }, { titulo: "Fichas apostadas", ancho: 24, tipo: "num" },
+        { titulo: "Fichas ganadas", ancho: 24, tipo: "num" }, { titulo: "Resultado neto", ancho: 24, tipo: "num" },
+        { titulo: "Partidas jugadas", ancho: 24, tipo: "num" }, { titulo: "Estado", ancho: 16, tipo: "texto" },
+        { titulo: "Última actividad", ancho: 28, tipo: "fecha" },
+      ];
+      const filas = usuariosFiltrados().map((u) => [u.username, Number(u.saldo || 0), Number(u.cargado || 0), Number(u.gastado || 0), Number(u.ganado || 0),
+        Number(u.neto || 0), Number(u.jugadas || 0), u.activo ? "Activo" : "Bloqueado", serial(u.ultima_actividad)]);
+      const hoy = new Date().toLocaleDateString("en-CA", { timeZone: TZ });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([_xlsx("Jugadores", columnas, filas)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+      a.download = `suce-jugadores-${hoy}.xlsx`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }
+
+    async function crearUsuario() {
+      const username = $("nuevo-username").value.trim();
+      const password = $("nuevo-password").value;
+      const fichas = parseInt($("nuevo-fichas").value, 10) || 0;
+      const msg = $("mensaje-crear");
+      msg.textContent = "";
+      if (!username || !password) return aviso(msg, "Completá usuario y contraseña", false);
+      try {
+        const id = await adminCrearUsuario(username, password);
+        if (fichas > 0) await adminCargarFichas(id, fichas);
+        aviso(msg, `Jugador "${username.toLowerCase()}" creado${fichas > 0 ? ` con ${fmt(fichas)} fichas` : ""} ✔`, true);
+        $("nuevo-username").value = ""; $("nuevo-password").value = ""; $("nuevo-fichas").value = "";
+        if (!Realtime.conectado) cargarTodo();   
+      } catch (e) { aviso(msg, e.message, false); }
+    }
+
+    async function alternarBloqueo(id) {
+      const u = usuarios.find((x) => x.id === id);
+      if (!u) return;
+      const bloquear = u.activo;
+      const ok = confirm(bloquear
+        ? `¿Bloquear a "${u.username}"?\nNo va a poder entrar ni jugar hasta que lo desbloquees.`
+        : `¿Desbloquear a "${u.username}"?`);
+      if (!ok) return;
+      try {
+        await adminBloquearUsuario(id, bloquear);
+        if (!Realtime.conectado) await cargarTodo();   
+        if (detId === id) verDetalle(id);
+      } catch (e) { alert(e.message); }
+    }
+
+    let accion = null; 
+    function abrirAccion(tipo, id) {
+      const u = usuarios.find((x) => x.id === id);
+      accion = { tipo, id };
+      const esPass = tipo === "password";
+      $("acc-titulo").textContent = tipo === "cargar" ? "Cargar fichas" : tipo === "quitar" ? "Quitar fichas" : "Nueva contraseña";
+      $("acc-desc").innerHTML = `Jugador: <b>${esc(u ? u.username : "")}</b>` + (u && !esPass ? ` · saldo actual <b>${fmt(u.saldo)}</b>` : "");
+      $("acc-monto").classList.toggle("oculto", esPass);
+      $("acc-pass").classList.toggle("oculto", !esPass);
+      $("acc-chips").classList.toggle("oculto", esPass);
+      $("acc-chips").innerHTML = [1000, 5000, 10000, 50000, 100000].map((n) =>
+        `<button class="secundario" onclick="$('acc-monto').value=${n}">${fmt(n)}</button>`).join("");
+      $("acc-monto").value = ""; $("acc-pass").value = ""; $("acc-msg").textContent = "";
+      $("modal-accion").classList.add("abierto");
+      setTimeout(() => (esPass ? $("acc-pass") : $("acc-monto")).focus(), 50);
+    }
+    function cerrarAccion() { $("modal-accion").classList.remove("abierto"); accion = null; }
+
+    async function confirmarAccion() {
+      if (!accion) return;
+      const msg = $("acc-msg"), btn = $("acc-ok");
+      const { tipo, id } = accion;
+      try {
+        btn.disabled = true;
+        if (tipo === "password") {
+          const p = $("acc-pass").value;
+          if (!p || p.length < 4) return aviso(msg, "Mínimo 4 caracteres", false);
+          await adminResetearPassword(id, p);
+        } else {
+          const monto = parseInt($("acc-monto").value, 10);
+          if (!monto || monto <= 0) return aviso(msg, "Ingresá una cantidad válida", false);
+          const nuevoSaldo = tipo === "cargar" ? await adminCargarFichas(id, monto) : await adminQuitarFichas(id, monto);
+          const u = usuarios.find((x) => x.id === id);
+          if (u && typeof nuevoSaldo === "number") { u.saldo = nuevoSaldo; flashIds.add(id); repintar(); }   // feedback inmediato
+        }
+        cerrarAccion();
+        if (!Realtime.conectado) await cargarTodo();
+        if (detId === id && $("modal-detalle").classList.contains("abierto")) verDetalle(id);
+      } catch (e) { aviso(msg, e.message, false); }
+      finally { btn.disabled = false; }
+    }
+    const TIPO_TXT = { apuesta:"Apuesta", premio:"Premio", carga_admin:"Carga admin", ajuste:"Ajuste" };
+    async function verDetalle(id) {
+      detId = id;
+      $("modal-detalle").classList.add("abierto");
+      try {
+        const d = await adminDetalleUsuario(id);
+        const u = usuarios.find((x) => x.id === id) || {};
+        $("det-titulo").textContent = d.usuario.username;
+        $("det-sub").innerHTML = `Creado el ${esc(new Date(d.usuario.creado_en).toLocaleDateString("es-PY", { timeZone: TZ }))} · ` +
+          `<span class="badge ${d.usuario.activo ? "activo" : "inactivo"}">${d.usuario.activo ? "Activo" : "Bloqueado"}</span>`;
+        $("det-resumen").innerHTML = [
+          ["Saldo", fmt(d.saldo), ""], ["Cargado", fmt(u.cargado), ""], ["Gastado", fmt(u.gastado), ""],
+          ["Ganado", fmt(u.ganado), ""], ["Neto", signo(u.neto || 0), clase(u.neto || 0)], ["Jugadas", fmt(u.jugadas), ""],
+        ].map(([l, v, c]) => `<div><small>${l}</small><b class="${c}">${v}</b></div>`).join("");
+        const btn = $("det-bloquear");
+        btn.textContent = d.usuario.activo ? "⛔ Bloquear" : "✔ Desbloquear";
+        btn.className = "mini " + (d.usuario.activo ? "peligro" : "ok");
+
+        $("det-juegos").innerHTML = d.por_juego.length ? d.por_juego.map((j) =>
+          `<div class="hbar"><div class="fila"><span>${esc(nombreJuego(j.juego))}</span>
+           <span>${fmt(j.partidas)} jugadas · apostó ${fmt(j.apostado)} · cobró ${fmt(j.premios)}</span></div></div>`).join("")
+          : `<div class="dim" style="font-size:.88rem;">Todavía no jugó.</div>`;
+
+        $("det-movs").innerHTML = d.movimientos.length ? d.movimientos.map((m) => `
+          <tr><td class="dim">${fechaHora(m.creado_en)}</td><td>${esc(TIPO_TXT[m.tipo] || m.tipo)}</td>
+          <td class="dim">${esc(m.tipo === "carga_admin" ? "" : (NOMBRES[m.referencia] || m.referencia || ""))}</td>
+          <td class="num ${clase(m.monto)}">${signo(m.monto)}</td><td class="num dim">${fmt(m.saldo_resultante)}</td></tr>`).join("")
+          : `<tr><td class="vacio">Sin movimientos.</td></tr>`;
+      } catch (e) { $("det-titulo").textContent = "Error"; $("det-sub").textContent = e.message; }
+    }
+    function cerrarDetalle() { $("modal-detalle").classList.remove("abierto"); detId = null; }
+    function renderActividad(lista = actividad) {
+      $("tbody-actividad").innerHTML = lista.length ? lista.map((p) => {
+        const res = p.ganancia - p.apuesta;
+        return `<tr class="${p._nuevo ? "feed-nuevo" : ""}"><td class="dim">${hace(p.creado_en)}</td><td class="u-nombre">${esc(p.username)}</td>
+          <td>${esc(nombreJuego(p.juego))}</td><td class="num">${fmt(p.apuesta)}</td><td class="num">${fmt(p.ganancia)}</td>
+          <td class="num ${clase(res)}">${signo(res)}</td></tr>`;
+      }).join("") : `<tr><td colspan="6" class="vacio">Todavía no hubo partidas.</td></tr>`;
+      if (lista.some((p) => p._nuevo)) setTimeout(() => lista.forEach((p) => delete p._nuevo), 1400);
+    }
+    let catalogo = [];
+    async function cargarCatalogo() {
+      try { catalogo = await catalogoJuegos(); renderCatalogo(); } catch (e) { $("tbody-juegos").innerHTML = `<tr><td colspan="5" class="vacio">${esc(e.message)}</td></tr>`; }
+    }
+    function renderCatalogo() {
+      const nom = (j) => esc(NOMBRES[j.id] || j.nombre);
+      $("tbody-juegos").innerHTML = catalogo.map((j) => `
+        <tr>
+          <td class="u-nombre">${nom(j)}<small>${esc(j.id)}</small></td>
+          <td class="num"><input type="number" min="1" step="100" value="${j.apuesta_min}" id="min-${esc(j.id)}" style="width:130px;margin:0;text-align:right;padding:8px 10px;"></td>
+          <td class="num"><input type="number" min="1" step="100" value="${j.apuesta_max}" id="max-${esc(j.id)}" style="width:130px;margin:0;text-align:right;padding:8px 10px;"></td>
+          <td><label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;"><input type="checkbox" id="on-${esc(j.id)}" ${j.activo ? "checked" : ""} style="width:auto;margin:0;"> ${j.activo ? "Activo" : "Apagado"}</label></td>
+          <td><button class="mini" onclick="guardarJuego('${esc(j.id)}')">Guardar</button></td>
+        </tr>`).join("");
+    }
+    async function guardarJuego(id) {
+      const min = parseInt($("min-" + id).value, 10), max = parseInt($("max-" + id).value, 10), on = $("on-" + id).checked;
+      const msg = $("mensaje-juegos");
+      try {
+        catalogo = await adminConfigJuego(id, min, max, on);
+        renderCatalogo();
+        aviso(msg, `Guardado: ${id} ahora va de ${fmt(min)} a ${fmt(max)} fichas${on ? "" : " (apagado)"}`, true);
+      } catch (e) { aviso(msg, e.message, false); }
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { if ($("modal-accion").classList.contains("abierto")) cerrarAccion(); else cerrarDetalle(); }
+      if (e.key === "Enter" && $("modal-accion").classList.contains("abierto")) confirmarAccion();
+    });
+
+    let ticksAdmin = 0, repintarPend = null, detTimer = null;
+
+    function refrescoSiPuede() {
+      const modalAbierto = document.querySelector(".velo.abierto");
+      if (document.visibilityState === "visible" && !modalAbierto) cargarTodo();
+    }
+
+    function aplicarUsuario(f) {
+      const i = usuarios.findIndex((u) => u.id === f.id);
+      const ant = i >= 0 ? usuarios[i] : null;
+      if (i >= 0) usuarios[i] = f; else usuarios.push(f);
+      flashIds.add(f.id);
+      if (!metricas || f.rol !== "jugador") return;
+      const d = (k) => (Number(f[k]) || 0) - (ant ? Number(ant[k]) || 0 : 0);
+      metricas.fichas_circulacion += d("saldo");
+      metricas.fichas_cargadas += d("cargado");
+      metricas.total_apostado += d("gastado");
+      metricas.total_premios += d("ganado");
+      metricas.partidas_total += d("jugadas");
+      metricas.partidas_hoy += d("jugadas");
+      const hoy = metricas.por_dia && metricas.por_dia[metricas.por_dia.length - 1];
+      if (hoy) { hoy.apostado += d("gastado"); hoy.premios += d("ganado"); hoy.partidas += d("jugadas"); }
+      if (!ant) { metricas.jugadores_total++; if (f.activo) metricas.jugadores_activos++; else metricas.jugadores_bloqueados++; }
+      else if (ant.activo !== f.activo) {
+        metricas.jugadores_activos += f.activo ? 1 : -1;
+        metricas.jugadores_bloqueados += f.activo ? -1 : 1;
+      }
+    }
+
+    function aplicarPartida(p) {
+      p._nuevo = true;
+      actividad.unshift(p);
+      if (actividad.length > 60) actividad.length = 60;
+      if (!metricas) return;
+      const pj = metricas.por_juego.find((j) => j.juego === p.juego);
+      if (pj) { pj.partidas++; pj.apostado += p.apuesta; pj.premios += p.ganancia; }
+      else metricas.por_juego.push({ juego: p.juego, nombre: nombreJuego(p.juego), partidas: 1, apostado: p.apuesta, premios: p.ganancia });
+      metricas.por_juego.sort((a, b) => b.partidas - a.partidas);
+    }
+
+    function repintar() {
+      if (repintarPend) return;
+      repintarPend = setTimeout(() => {
+        repintarPend = null;
+        if (metricas) { renderKPIs(); renderGraficos(); }
+        renderUsuarios(); renderActividad();
+        pintarEnVivo();
+      }, 60);
+    }
+
+    function refrescarDetalle() {
+      clearTimeout(detTimer);
+      detTimer = setTimeout(() => { if (detId && $("modal-detalle").classList.contains("abierto")) verDetalle(detId); }, 800);
+    }
+
+    function alEventoAdmin(ev) {
+      switch (ev.tipo) {
+        case "reconectado": return cargarTodo();           
+        case "usuarios":    (ev.usuarios || []).forEach(aplicarUsuario); break;
+        case "partidas":    (ev.partidas || []).forEach(aplicarPartida); break;
+        case "metricas":    metricas = ev.metricas; break;   
+        case "presencia":   if (ev.online) online.add(ev.id); else online.delete(ev.id); break;
+        case "presencia_snapshot": online = new Set(ev.online || []); break;
+        default: return;
+      }
+      $("actualizado").dataset.base = "Última novedad " + new Date().toLocaleTimeString("es-PY", { timeZone: TZ });
+      repintar();
+      if (ev.tipo === "usuarios" && detId && (ev.usuarios || []).some((u) => u.id === detId)) refrescarDetalle();
+    }
+
+   function pintarEnVivo() {
+  const el = $("actualizado");
+  el.dataset.base = el.dataset.base || el.textContent;
+  el.innerHTML = esc(el.dataset.base) + (Realtime.conectado
+    ? ' <span style="color:var(--green); text-shadow:0 0 8px var(--green);">●</span> En Vivo'
+    : "");
+}
+
+    Realtime.suscribir("admin", alEventoAdmin);
+    Realtime.alCambiarEstado((conectado) => {
+      if (!conectado) { online = new Set(); repintar(); }   
+      pintarEnVivo();
+    });
+    setInterval(() => { renderUsuarios(); renderActividad(); }, 30000);
+    setInterval(() => { if (!Realtime.conectado || ++ticksAdmin % 3 === 0) refrescoSiPuede(); }, 20000);
+
+    cargarTodo();
+    cargarCatalogo();
+  </script>
+</body>
+</html>

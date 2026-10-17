@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SUCE</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<!-- CAMBIO 1: Fondo oscuro elegante en lugar del azul anterior -->
+<body style="padding:0; align-items:stretch; background-color: #0a0f12;">
+
+  <!-- CAMBIO 2: Nav a todo el ancho (sin contenedor-ancho ni márgenes automáticos) -->
+  <nav class="nav-lobby" style="width: 100%; padding-left:24px; padding-right:24px; box-sizing: border-box;">
+    <div class="marca" style="font-size:1.3rem;">
+      <span class="logo-c" style="--s:34px" role="img" aria-label="Logo SUCE"></span>
+      SUCE
+    </div>
+    <div class="nav-links">
+      <a href="#juegos">Juegos</a>
+      <a href="#en-vivo">En Vivo</a>
+      <a href="#ranking">Ganadores</a>
+    </div>
+    <div id="zona-cuenta"></div>
+  </nav>
+
+  <section class="hero" style="position:relative; overflow:hidden;">
+    <span class="icono-flotante" style="top:15%; left:8%; animation-delay:0s;">🂡</span>
+    <span class="icono-flotante" style="top:65%; left:14%; animation-delay:1.2s; font-size:1.4rem;">🎲</span>
+    <span class="icono-flotante" style="top:20%; right:10%; animation-delay:2s;">🪙</span>
+    <span class="icono-flotante" style="top:70%; right:16%; animation-delay:0.6s; font-size:1.5rem;">🎰</span>
+    <span class="icono-flotante" style="top:45%; left:3%; animation-delay:3s; font-size:1.3rem;">♠️</span>
+    <span class="icono-flotante" style="top:40%; right:4%; animation-delay:2.6s; font-size:1.3rem;">🎡</span>
+    <div class="hero-logo">Bienvenido a SUCE</div>
+    <p class="hero-sub">
+      15 juegos de entretenimiento con fichas virtuales. Mirá los juegos, el ranking, y cuando
+      quieras jugar, entrá con tu cuenta.
+    </p>
+    <a href="#juegos" class="cta">Ver todos los juegos ↓</a>
+
+    <div class="stats-bar" style="margin-top:36px;">
+      <div class="stat"><span class="num" id="stat-juegos">0</span><span class="label">Juegos</span></div>
+      <div class="stat"><span class="num" id="stat-virtual">0%</span><span class="label">Virtual</span></div>
+      <div class="stat"><span class="num">100%</span><span class="label">Entretenimiento</span></div>
+    </div>
+  </section>
+
+  <section class="seccion reveal" style="padding-top:0;">
+    <div class="tiles-categoria">
+      <div class="tile-cat" onclick="filtrarCategoria('Máquinas')" style="background:linear-gradient(135deg,#7a1f1f,#2d0a0a);">
+        <span class="emoji-tile">🎰</span><span class="nombre-tile">Máquinas</span>
+      </div>
+      <div class="tile-cat" onclick="filtrarCategoria('Mesa')" style="background:linear-gradient(135deg,#1f3d2b,#0a1a10);">
+        <span class="emoji-tile">🎲</span><span class="nombre-tile">Mesa</span>
+      </div>
+      <div class="tile-cat" onclick="filtrarCategoria('Cartas')" style="background:linear-gradient(135deg,#2f2f4d,#12121f);">
+        <span class="emoji-tile">🃏</span><span class="nombre-tile">Cartas</span>
+      </div>
+      <div class="tile-cat" onclick="filtrarCategoria('Instantáneo')" style="background:linear-gradient(135deg,#4d3f1f,#1f1a0a);">
+        <span class="emoji-tile">🎫</span><span class="nombre-tile">Instantáneos</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion reveal" id="como-funciona" style="padding-top:20px;">
+    <div class="seccion-header">
+      <div class="kicker">Simple y rápido</div>
+      <h2>Cómo funciona</h2>
+    </div>
+    <div class="pasos">
+      <div class="paso">
+        <div class="num-paso">1</div>
+        <h4>Pedí tu cuenta</h4>
+        <p>El administrador te crea un usuario y te carga fichas virtuales para empezar.</p>
+      </div>
+      <div class="paso">
+        <div class="num-paso">2</div>
+        <h4>Iniciá sesión</h4>
+        <p>Entrá con tu usuario y contraseña desde cualquier dispositivo.</p>
+      </div>
+      <div class="paso">
+        <div class="num-paso">3</div>
+        <h4>Elegí un juego y jugá</h4>
+        <p>15 juegos disponibles donde probas tu suerte.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion reveal" id="ranking" style="padding-top:0;">
+    <div class="seccion-header">
+      <div class="kicker">En vivo</div>
+      <h2>Ganadores recientes</h2>
+      <p>Los que más fichas virtuales acumularon jugando en SUCE</p>
+    </div>
+    <div class="ticker-wrap">
+      <div class="ticker" id="ticker-ranking">
+        <div class="ticker-card"><div class="monto-t">Cargando...</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion reveal" id="destacado">
+    <div class="seccion-header">
+      <div class="kicker">Empezá por acá</div>
+      <h2>Juego destacado</h2>
+      <p>El más jugado esta semana en SUCE</p>
+    </div>
+    <div class="destacado">
+      <div class="emoji-grande">🎰</div>
+      <div>
+        <h3>Tragamonedas</h3>
+        <p>Girá los carretes y buscá la combinación ganadora. 3 símbolos iguales multiplican tu apuesta hasta x10.</p>
+        <a href="#" class="cta-mini" onclick="irAJuego('juegos/tragamonedas.html', true); return false;">Jugar ahora →</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion reveal" id="juegos">
+    <div class="seccion-header">
+      <div class="kicker">Catálogo completo</div>
+      <h2>Todos los juegos</h2>
+      <p>Elegí entre 15 juegos de casino, 100% con fichas virtuales</p>
+    </div>
+    <div class="categorias-pills" id="categorias-pills"></div>
+    <div class="grid-juegos-amplio" id="grid-juegos"></div>
+  </section>
+
+  <section class="seccion reveal" id="en-vivo">
+    <div class="seccion-header">
+      <div class="kicker">🔴 Apuestas en tiempo real</div>
+      <h2>Juegos en Vivo</h2>
+      <p>Jugá 1 vs 1 contra otros usuarios, resultado al instante.</p>
+    </div>
+    <div class="grid-juegos-amplio" id="grid-en-vivo"></div>
+  </section>
+
+  <section class="seccion reveal" id="actividad">
+    <div class="seccion-header">
+      <div class="kicker">Justo ahora</div>
+      <h2>Actividad en vivo</h2>
+      <p>Ganancias recientes de otros jugadores en SUCE</p>
+    </div>
+    <div class="actividad-lista" id="actividad-lista">
+      <div class="actividad-item"><span class="punto-vivo"></span> Cargando actividad...</div>
+    </div>
+  </section>
+
+  <section class="seccion reveal" id="faq">
+    <div class="seccion-header">
+      <div class="kicker">Dudas</div>
+      <h2>Preguntas frecuentes</h2>
+    </div>
+    <details class="faq-item">
+      <summary>¿Las fichas tienen valor real?</summary>
+      <p>Si. Las fichas de SUCE son 100% virtuales, una vez acumulado la ganancia, procedmos a realizar el pago </p>
+    </details>
+    <details class="faq-item">
+      <summary>¿Cómo consigo fichas?</summary>
+      <p>El administrador de la plataforma te las carga directamente a tu cuenta una vez creada.</p>
+    </details>
+    <details class="faq-item">
+      <summary>¿Puedo jugar desde el celular?</summary>
+      <p>Sí, SUCE funciona desde el navegador de cualquier celular o computadora, sin necesidad de instalar nada.</p>
+    </details>
+    <details class="faq-item">
+      <summary>¿Se agregan más juegos?</summary>
+      <p>Sí, estamos sumando juegos nuevos constantemente hasta completar el catálogo completo.</p>
+    </details>
+  </section>
+
+  <footer class="footer-lobby">
+    <span class="marca-footer"><span class="logo-c" role="img" aria-label="Logo SUCE"></span> SUCE</span>
+    Casino Online con apuestas en dinero real. Exclusivo para mayores de 18 años.
+    El juego puede causar adicción. Juega con responsabilidad.
+  </footer>
+
+  <script src="js/api.js"></script>
+  <script>
+
+    const COLORES_JUEGO = {
+      tragamonedas:  "linear-gradient(135deg, #7a1f1f, #2d0a0a)",
+      ruleta:        "linear-gradient(135deg, #7a1f1f, #1f2a1f)",
+      blackjack:     "linear-gradient(135deg, #1f3d2b, #0a1a10)",
+      poker:         "linear-gradient(135deg, #1f2a4d, #0a0e1f)",
+      baccarat:      "linear-gradient(135deg, #4d1f3d, #1f0a17)",
+      dados:         "linear-gradient(135deg, #3d2f1f, #1a130a)",
+      keno:          "linear-gradient(135deg, #1f3d4d, #0a1a1f)",
+      bingo:         "linear-gradient(135deg, #4d3d1f, #1f170a)",
+      rasca:         "linear-gradient(135deg, #2f1f4d, #120a1f)",
+      ruleta_suerte: "linear-gradient(135deg, #4d1f2f, #1f0a13)",
+      hilo:          "linear-gradient(135deg, #1f4d3d, #0a1f17)",
+      moneda:        "linear-gradient(135deg, #4d3f1f, #1f1a0a)",
+      plinko:        "linear-gradient(135deg, #1f2f4d, #0a121f)",
+      minas:         "linear-gradient(135deg, #3d1f1f, #1a0a0a)",
+      carta_alta:    "linear-gradient(135deg, #2f2f4d, #12121f)",
+      pvp_carta_alta: "linear-gradient(135deg, #0f766e, #022c2a)",
+    };
+
+    const CATALOGO_JUEGOS = [
+      { id: "tragamonedas", nombre: "Tragamonedas", emoji: "🎰", ruta: "juegos/tragamonedas.html", disponible: true, tag: "Máquinas", badge: "Hot", badgeColor: "rojo" },
+      { id: "ruleta", nombre: "Ruleta", emoji: "🎡", ruta: "juegos/ruleta.html", disponible: true, tag: "Mesa", badge: "Popular", badgeColor: "dorado" },
+      { id: "blackjack", nombre: "Blackjack", emoji: "🃏", ruta: "juegos/blackjack.html", disponible: false, tag: "Próximamente", badge: "Pronto", badgeColor: "gris" },
+      { id: "poker", nombre: "Video Póker", emoji: "🂡", ruta: "juegos/poker.html", disponible: false, tag: "Próximamente", badge: "Pronto", badgeColor: "gris" },
+      { id: "baccarat", nombre: "Baccarat", emoji: "🎴", ruta: "juegos/baccarat.html", disponible: false, tag: "Próximamente", badge: "Pronto", badgeColor: "gris" },
+      { id: "dados", nombre: "Dados", emoji: "🎲", ruta: "juegos/dados.html", disponible: true, tag: "Mesa", badge: "Nuevo", badgeColor: "verde" },
+      { id: "keno", nombre: "Keno", emoji: "🔢", ruta: "juegos/keno.html", disponible: true, tag: "Sorteo", badge: "Nuevo", badgeColor: "verde" },
+      { id: "bingo", nombre: "Bingo", emoji: "🅱️", ruta: "juegos/bingo.html", disponible: false, tag: "Próximamente", badge: "Pronto", badgeColor: "gris" },
+      { id: "rasca", nombre: "Rasca y Gana", emoji: "🎫", ruta: "juegos/rasca.html", disponible: true, tag: "Instantáneo", badge: "Popular", badgeColor: "dorado" },
+      { id: "ruleta_suerte", nombre: "Rueda de la Suerte", emoji: "🎡", ruta: "juegos/rueda.html", disponible: true, tag: "Instantáneo", badge: "Hot", badgeColor: "rojo" },
+      { id: "hilo", nombre: "Alto o Bajo", emoji: "⬆️", ruta: "juegos/hilo.html", disponible: true, tag: "Cartas", badge: "Nuevo", badgeColor: "verde" },
+      { id: "moneda", nombre: "Cara o Cruz", emoji: "🪙", ruta: "juegos/moneda.html", disponible: true, tag: "Instantáneo", badge: "Popular", badgeColor: "dorado" },
+      { id: "plinko", nombre: "Plinko", emoji: "⚪", ruta: "juegos/plinko.html", disponible: false, tag: "Próximamente", badge: "Pronto", badgeColor: "gris" },
+      { id: "minas", nombre: "Minas", emoji: "💣", ruta: "juegos/minas.html", disponible: false, tag: "Próximamente", badge: "Pronto", badgeColor: "gris" },
+      { id: "carta_alta", nombre: "Carta Más Alta", emoji: "♠️", ruta: "juegos/carta_alta.html", disponible: true, tag: "Cartas", badge: "Nuevo", badgeColor: "verde" },
+    ];
+
+    const JUEGOS_EN_VIVO = [
+      { juego: "carta_alta",    nombre: "Carta Más Alta",      emoji: "♠️" },
+      { juego: "dado_simple",   nombre: "Dado Más Alto",       emoji: "🎲" },
+      { juego: "dados_dobles",  nombre: "Dados Dobles",        emoji: "🎲" },
+      { juego: "numero_suerte", nombre: "Número de la Suerte", emoji: "🔢" },
+      { juego: "ruleta_pvp",    nombre: "Ruleta en Vivo",      emoji: "🎡" },
+    ];
+
+    function renderZonaCuenta() {
+      const zona = document.getElementById("zona-cuenta");
+      if (Auth.getToken()) {
+        zona.innerHTML = `
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="saldo">🪙 <span id="saldo">···</span></div>
+            <button class="secundario" style="width:auto; padding:9px 14px; font-size:0.8rem;" onclick="Auth.cerrarSesion()">Salir</button>
+          </div>`;
+        obtenerMiSaldo().then(s => {
+          const el = document.getElementById("saldo");
+          if (el) el.textContent = s;
+        }).catch(() => {});
+      } else {
+        zona.innerHTML = `<a href="login.html" class="btn-nav-login">Iniciar sesión</a>`;
+      }
+    }
+
+    function irAJuego(ruta, disponible) {
+      if (!disponible) {
+        alert("Este juego todavía no está disponible. ¡Pronto!");
+        return;
+      }
+      if (!Auth.getToken()) {
+        // Guardamos a dónde quería ir para poder mandarlo directo después del login (mejora simple, opcional)
+        window.location.href = "login.html";
+        return;
+      }
+      window.location.href = ruta;
+    }
+
+    let categoriaActiva = "Todos";
+
+    function renderPills() {
+      const categorias = ["Todos", ...new Set(CATALOGO_JUEGOS.map(j => j.tag))];
+      const cont = document.getElementById("categorias-pills");
+      cont.innerHTML = categorias.map(c => `
+        <button class="pill ${c === categoriaActiva ? 'activo' : ''}" onclick="filtrarCategoria('${c}')">${c}</button>
+      `).join("");
+    }
+
+    function filtrarCategoria(cat) {
+      categoriaActiva = cat;
+      renderPills();
+      renderCatalogo();
+      document.getElementById("juegos").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function renderCatalogo() {
+      const grid = document.getElementById("grid-juegos");
+      const lista = categoriaActiva === "Todos"
+        ? CATALOGO_JUEGOS
+        : CATALOGO_JUEGOS.filter(j => j.tag === categoriaActiva);
+
+      if (lista.length === 0) {
+        grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--text-dim);">No hay juegos en esta categoría todavía.</p>';
+        return;
+      }
+
+      grid.innerHTML = lista.map(j => `
+        <a href="#" onclick="irAJuego('${j.ruta}', ${j.disponible}); return false;"
+           class="card-juego-rica ${j.disponible ? '' : 'bloqueada'}">
+          <span class="badge-card ${j.badgeColor}">${j.badge}</span>
+          <div class="arte-juego" style="background:${COLORES_JUEGO[j.id] || 'linear-gradient(135deg,#333,#111)'}">
+            <span class="icono-grande">${j.emoji}</span>
+            <span class="titulo-juego">${j.nombre}</span>
+          </div>
+          <div class="pie-card"><span class="tag-rica">${j.tag}</span></div>
+          <div class="overlay-jugar">
+            <span class="boton-jugar">${j.disponible ? '▶ Jugar' : '🔒 Pronto'}</span>
+          </div>
+        </a>
+      `).join("");
+    }
+
+    function renderEnVivo() {
+      const grid = document.getElementById("grid-en-vivo");
+      grid.innerHTML = JUEGOS_EN_VIVO.map(j => `
+        <a href="#" onclick="irAJuego('juegos/pvp.html?juego=${j.juego}', true); return false;" class="card-juego-rica">
+          <span class="badge-card rojo">🔴 En vivo</span>
+          <div class="arte-juego" style="background: linear-gradient(135deg, #0f766e, #022c2a);">
+            <span class="icono-grande">${j.emoji}</span>
+            <span class="titulo-juego">${j.nombre}</span>
+          </div>
+          <div class="pie-card"><span class="tag-rica">1 vs 1</span></div>
+          <div class="overlay-jugar"><span class="boton-jugar">▶ Jugar</span></div>
+        </a>
+      `).join("");
+    }
+
+    async function cargarTicker() {
+      const cont = document.getElementById("ticker-ranking");
+      try {
+        const filas = await obtenerRanking();
+        if (!filas || filas.length === 0) {
+          cont.innerHTML = '<div class="ticker-card"><div class="monto-t">Todavía nadie jugó</div></div>';
+          return;
+        }
+        const medallas = ["🥇","🥈","🥉"];
+        cont.innerHTML = filas.map((f, i) => `
+          <div class="ticker-card">
+            <div class="medalla">${medallas[i] || "🎖️"}</div>
+            <div class="nombre-t">${f.username}</div>
+            <div class="monto-t">🪙 ${f.total_ganado}</div>
+          </div>
+        `).join("");
+      } catch (e) {
+        cont.innerHTML = '<div class="ticker-card"><div class="monto-t">Sin datos por ahora</div></div>';
+      }
+    }
+
+    function tiempoRelativo(fechaISO) {
+      const segundos = Math.floor((Date.now() - new Date(fechaISO).getTime()) / 1000);
+      if (segundos < 60) return "recién";
+      const minutos = Math.floor(segundos / 60);
+      if (minutos < 60) return `hace ${minutos} min`;
+      const horas = Math.floor(minutos / 60);
+      if (horas < 24) return `hace ${horas} h`;
+      return `hace ${Math.floor(horas / 24)} d`;
+    }
+
+    const NOMBRES_JUEGO = {
+      tragamonedas: "Tragamonedas", ruleta: "Ruleta", dados: "Dados",
+      keno: "Keno", rasca: "Rasca y Gana", rueda: "Rueda de la Suerte",
+      hilo: "Alto o Bajo", moneda: "Cara o Cruz", carta_alta: "Carta Más Alta"
+    };
+
+    async function cargarActividad() {
+      const cont = document.getElementById("actividad-lista");
+      try {
+        const filas = await obtenerActividadReciente();
+        if (!filas || filas.length === 0) {
+          cont.innerHTML = '<div class="actividad-item">Todavía no hay actividad — ¡sé el primero!</div>';
+          return;
+        }
+        cont.innerHTML = filas.map(f => `
+          <div class="actividad-item">
+            <span class="punto-vivo"></span>
+            <span><b>${f.username}</b> ganó <b>🪙 ${f.ganancia}</b> en ${NOMBRES_JUEGO[f.juego_id] || f.juego_id}</span>
+            <span class="hace">${tiempoRelativo(f.creado_en)}</span>
+          </div>
+        `).join("");
+      } catch (e) {
+        cont.innerHTML = '<div class="actividad-item">No se pudo cargar la actividad ahora.</div>';
+      }
+    }
+
+    function animarContador(el, destino, sufijo = "") {
+      const duracion = 1000;
+      const inicio = performance.now();
+      function paso(ahora) {
+        const progreso = Math.min((ahora - inicio) / duracion, 1);
+        const valor = Math.floor(progreso * destino);
+        el.textContent = valor + sufijo;
+        if (progreso < 1) requestAnimationFrame(paso);
+      }
+      requestAnimationFrame(paso);
+    }
+
+    function iniciarContadores() {
+      animarContador(document.getElementById("stat-juegos"), 15);
+      animarContador(document.getElementById("stat-virtual"), 100, "%");
+    }
+
+    function iniciarRevealAlScroll() {
+      const observer = new IntersectionObserver((entradas) => {
+        entradas.forEach(entrada => {
+          if (entrada.isIntersecting) {
+            entrada.target.classList.add("visible");
+            observer.unobserve(entrada.target);
+          }
+        });
+      }, { threshold: 0.15 });
+
+      document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
+    }
+
+    renderZonaCuenta();
+    renderPills();
+    renderCatalogo();
+    renderEnVivo();
+    cargarTicker();
+    cargarActividad();
+    iniciarContadores();
+    iniciarRevealAlScroll();
+    setInterval(cargarActividad, 20000); // se refresca sola cada 20s, sensación de "en vivo"
+  </script>
+  <a href="https://wa.me/595983775018?text=Hola%2C%20tengo%20una%20consulta%20sobre%20SUCE" target="_blank" rel="noopener" class="whatsapp-float" aria-label="Escribir por WhatsApp"
+     style="position:fixed; bottom:20px; right:20px; width:56px; height:56px; border-radius:50%; background:#25D366; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 20px rgba(0,0,0,0.4); z-index:999; text-decoration:none;">
+    <svg viewBox="0 0 32 32" fill="white" xmlns="http://www.w3.org/2000/svg" width="30" height="30" style="width:30px; height:30px; display:block;"><path d="M16.001 3C9.373 3 4 8.373 4 15.001c0 2.386.7 4.607 1.902 6.47L4 29l7.73-1.868A11.94 11.94 0 0 0 16 27.002c6.628 0 12-5.373 12-12.001C28.001 8.373 22.63 3 16.001 3zm0 21.6a9.55 9.55 0 0 1-4.87-1.34l-.35-.207-4.59 1.11 1.13-4.47-.23-.37A9.55 9.55 0 1 1 25.55 15c0 5.27-4.28 9.6-9.55 9.6zm5.24-7.13c-.29-.145-1.7-.84-1.96-.935-.26-.096-.45-.145-.64.145-.19.29-.73.935-.9 1.125-.165.19-.33.215-.615.07-.29-.145-1.22-.45-2.32-1.43-.86-.765-1.44-1.71-1.61-2-.165-.29-.017-.446.128-.59.13-.13.29-.34.435-.51.145-.17.19-.29.29-.484.096-.19.048-.36-.024-.505-.072-.145-.64-1.545-.878-2.115-.23-.555-.465-.48-.64-.49-.165-.008-.355-.01-.545-.01a1.05 1.05 0 0 0-.76.355c-.26.29-1 1-1 2.42 0 1.42 1.02 2.79 1.16 2.98.145.19 2 3.05 4.84 4.28.676.29 1.203.465 1.615.595.678.215 1.296.185 1.785.112.545-.08 1.7-.695 1.94-1.365.24-.67.24-1.245.165-1.365-.072-.12-.26-.19-.545-.335z"/></svg>
+  </a>
+</body>
+</html>
