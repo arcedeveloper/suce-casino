@@ -2,9 +2,11 @@
 // api.js — cliente compartido: habla con el servidor Node (dev-server)
 // En tu PC usa http://localhost:3000; en Render usa el mismo dominio del sitio.
 // =====================================================================
-// En tu PC apunta al servidor local; en Render usa el mismo dominio del sitio.
-// (Si el frontend va a GitHub Pages, poné acá la URL de Render.)
-const API_URL = ["localhost","127.0.0.1"].includes(location.hostname) ? "http://localhost:3000" : "";
+
+// ⚠️ CAMBIO IMPORTANTE AQUÍ: Si estás en tu PC usa localhost, si estás en GitHub Pages usa Render.
+const API_URL = ["localhost","127.0.0.1"].includes(location.hostname) 
+  ? "http://localhost:3000" 
+  : "https://suce-casino-backend.onrender.com";
  
 // Las páginas de /juegos/ están una carpeta más adentro que el resto
 const RAIZ = location.pathname.includes("/juegos/") ? "../" : "";
