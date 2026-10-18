@@ -398,7 +398,7 @@ async function cargarTodo(manual) {
     }
     const _crcTabla = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
     const _crc32 = (b) => { let c = 0xffffffff; for (let i = 0; i < b.length; i++) c = _crcTabla[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
-    function _zip(archivos) {          // archivos: [{ nombre, texto }] → Uint8Array (zip sin compresión)
+    function _zip(archivos) {         
       const enc = new TextEncoder(), partes = [], central = []; let pos = 0;
       for (const a of archivos) {
         const nom = enc.encode(a.nombre), dat = enc.encode(a.texto), crc = _crc32(dat);
