@@ -52,12 +52,12 @@ const Auth = {
   },
   cerrarSesion: (slot = SLOT_PAGINA) => {
     Auth.olvidar(slot);
-    window.location.href = RAIZ + "login.html" + (slot === "admin" ? "?rol=admin" : "");
+    window.location.href = RAIZ + "login.html";
   },
   requiereSesion: (rolRequerido) => {
     const slot = rolRequerido ? slotDeRol(rolRequerido) : SLOT_PAGINA;
     if (!_leer(slot, "token") || (rolRequerido && _leer(slot, "rol") !== rolRequerido)) {
-      window.location.href = RAIZ + "login.html" + (slot === "admin" ? "?rol=admin" : "");
+      window.location.href = RAIZ + "login.html";
     }
   }
 };
@@ -65,7 +65,7 @@ const Auth = {
 // Si el navegador muestra una página "de caché" al volver atrás y ya no hay sesión, mandar al login
 window.addEventListener("pageshow", (e) => {
   if (e.persisted && !/(^|\/)(login|index)\.html$|\/$/.test(location.pathname) && !_leer(SLOT_PAGINA, "token")) {
-    window.location.href = RAIZ + "login.html" + (SLOT_PAGINA === "admin" ? "?rol=admin" : "");
+    window.location.href = RAIZ + "login.html";
   }
 });
  
@@ -282,6 +282,10 @@ document.addEventListener("DOMContentLoaded", () => {
 });
  
 // ---- Fichas: formato y catálogo de juegos (límites de apuesta) ----
-const fmtFichas = (n) => Number(n || 0).toLocaleString("es-PY");
+// Siempre con punto de miles (1.000 · 25.000 · 1.250.000), igual en cualquier navegador
+const fmtFichas = (n) => {
+  const v = Math.round(Number(n) || 0);
+  return (v < 0 ? "-" : "") + String(Math.abs(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
 const catalogoJuegos = () => llamarRPC("catalogo_juegos");
 const adminConfigJuego = (id, min, max, activo) => llamarRPC("admin_config_juego", { p_id: id, p_min: min, p_max: max, p_activo: activo });
