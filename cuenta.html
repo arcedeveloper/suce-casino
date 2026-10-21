@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi cuenta — SUCE</title>
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/juegos.css">
+<style>
+  .cuenta { max-width: 760px; margin: 0 auto; width: 100%; }
+  .resultado-grande {
+    text-align: center; padding: 26px 18px 22px; border-radius: 18px; margin-bottom: 14px;
+    background: linear-gradient(160deg, var(--bg-card-2), var(--bg-card)); border: 1px solid rgba(255,255,255,.07);
+  }
+  .resultado-grande .et { color: var(--text-dim); font-size: .82rem; letter-spacing: .5px; }
+  .resultado-grande .valor { font-size: 2.6rem; font-weight: 800; margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
+  .resultado-grande .txt { color: var(--text-dim); font-size: .88rem; max-width: 420px; margin: 0 auto; line-height: 1.45; }
+  .resultado-grande .hoy { display: inline-block; margin-top: 12px; padding: 6px 14px; border-radius: 999px; background: rgba(255,255,255,.05); font-size: .82rem; }
+  .pos { color: var(--green); } .neg { color: var(--red); } .dim { color: var(--text-dim); }
+
+  .kpis-c { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  @media (max-width: 560px) { .kpis-c { grid-template-columns: repeat(2, 1fr); } .resultado-grande .valor { font-size: 2.1rem; } }
+  .kpi-c { background: linear-gradient(160deg, var(--bg-card-2), var(--bg-card)); border: 1px solid rgba(255,255,255,.06); border-radius: 14px; padding: 14px 14px 12px; }
+  .kpi-c small { display: block; color: var(--text-dim); font-size: .74rem; }
+  .kpi-c b { display: block; font-size: 1.25rem; margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+  .bloque { background: linear-gradient(160deg, var(--bg-card-2), var(--bg-card)); border: 1px solid rgba(255,255,255,.06); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .bloque h3 { margin: 0 0 10px; font-size: 1.02rem; color: var(--gold-soft); font-family: 'Playfair Display', serif; }
+  .tabla-sc { overflow-x: auto; }
+  .bloque table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  .bloque th { text-align: left; color: var(--text-dim); font-weight: 600; font-size: .74rem; padding: 6px 8px; white-space: nowrap; }
+  .bloque td { padding: 9px 8px; border-top: 1px solid rgba(255,255,255,.05); white-space: nowrap; }
+  .bloque .n { text-align: right; font-variant-numeric: tabular-nums; }
+  .vacio { color: var(--text-dim); text-align: center; padding: 14px 0; font-size: .9rem; }
+  .movs-c { max-height: 380px; overflow-y: auto; }
+  @media (max-width: 560px) {
+    .bloque { padding: 14px 10px; }
+    .bloque table { font-size: .78rem; }
+    .bloque th, .bloque td { padding: 8px 4px; white-space: normal; }
+    .bloque td:first-child, .bloque th:first-child { white-space: nowrap; }
+    .pj th:nth-child(2), .pj td:nth-child(2) { display: none; }
+    .pj th, .pj td { padding: 8px 3px; font-size: .72rem; }
+    .pj td:first-child, .pj th:first-child { white-space: normal; max-width: 92px; }
+  }
+</style>
+</head>
+<body>
+  <div class="contenedor cuenta">
+    <a href="index.html" class="volver">← Volver al lobby</a>
+    <div class="juego-top">
+      <div class="marca">
+        <span class="logo-c" style="--s:30px" role="img" aria-label="Logo SUCE"></span>
+        <span id="titulo">Mi cuenta</span>
+      </div>
+      <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+    </div>
+
+    <div class="resultado-grande" id="resultado-grande">
+      <div class="et">Tu resultado total</div>
+      <div class="valor dim" id="neto">···</div>
+      <div class="txt" id="neto-txt">Cargando tu cuenta…</div>
+      <div class="hoy" id="hoy" style="display:none"></div>
+    </div>
+
+    <div class="kpis-c" id="kpis"></div>
+
+    <div class="bloque pj">
+      <h3>Por juego</h3>
+      <div class="tabla-sc">
+        <table>
+          <thead><tr><th>Juego</th><th class="n">Jugadas</th><th class="n">Apostado</th><th class="n">Cobrado</th><th class="n">Resultado</th></tr></thead>
+          <tbody id="por-juego"><tr><td colspan="5" class="vacio">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="bloque">
+      <h3>Últimos movimientos</h3>
+      <div class="movs-c tabla-sc">
+        <table>
+          <thead><tr><th>Cuándo</th><th>Qué pasó</th><th class="n">Fichas</th><th class="n">Saldo</th></tr></thead>
+          <tbody id="movs"><tr><td colspan="4" class="vacio">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <p class="dim" style="font-size:.78rem; text-align:center; margin:4px 0 24px;">Resultado = lo que cobraste menos lo que apostaste. Las fichas que te carga el administrador no cuentan como ganancia.</p>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+
+    const $ = (id) => document.getElementById(id);
+    const signo = (n) => (n > 0 ? "+" : "") + fmtFichas(n);
+    const clase = (n) => (n > 0 ? "pos" : n < 0 ? "neg" : "dim");
+    const TZ = "America/Asuncion";
+    const NOMBRES = {
+      tragamonedas: "🎰 Tragamonedas", moneda: "🪙 Cara o Cruz", dados: "🎲 Dados", hilo: "📈 Alto o Bajo",
+      carta_alta: "🃏 Carta Más Alta", ruleta: "🎡 Ruleta", keno: "🔢 Keno", rasca: "🎟️ Rasca y Gana", rueda: "🎯 Rueda de la Suerte"
+    };
+    const nombreJuego = (id) => NOMBRES[id] || id;
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    const cuando = (t) => new Date(t).toLocaleString("es-PY", { timeZone: TZ, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+
+    function textoMovimiento(m) {
+      const ref = m.referencia || "";
+      if (m.tipo === "carga_admin") return "Fichas cargadas por SUCE";
+      if (m.tipo === "apuesta") return ref.startsWith("pvp_") ? "Apuesta en mesa en vivo" : "Apuesta · " + nombreJuego(ref);
+      if (m.tipo === "premio") return ref.startsWith("pvp_") ? "Ganaste una mesa en vivo" : "Premio · " + nombreJuego(ref);
+      if (m.tipo === "ajuste") return ref === "pvp_empate" ? "Empate en mesa en vivo: apuesta devuelta"
+                                    : ref === "pvp_cancelada" ? "Mesa cancelada: apuesta devuelta" : "Ajuste de saldo";
+      return m.tipo;
+    }
+
+    function pintar(r) {
+      $("saldo").textContent = fmtFichas(r.saldo);
+      const neto = Number(r.neto);
+      const el = $("neto");
+      el.textContent = signo(neto); el.className = "valor " + clase(neto);
+      $("neto-txt").textContent = neto > 0 ? `Vas ganando: cobraste ${fmtFichas(neto)} fichas más de las que apostaste.`
+        : neto < 0 ? `Apostaste ${fmtFichas(-neto)} fichas más de las que cobraste.`
+        : Number(r.jugadas) ? "Estás justo en cero: cobraste lo mismo que apostaste." : "Todavía no jugaste. ¡Elegí un juego en el lobby!";
+      const hoy = Number(r.neto_hoy);
+      const h = $("hoy"); h.style.display = Number(r.jugadas) ? "inline-block" : "none";
+      h.innerHTML = `Hoy: <b class="${clase(hoy)}">${signo(hoy)}</b>`;
+
+      const k = [
+        ["Saldo actual", fmtFichas(r.saldo)], ["Fichas recibidas", fmtFichas(r.cargado)], ["Jugadas", fmtFichas(r.jugadas)],
+        ["Total apostado", fmtFichas(r.apostado)], ["Total cobrado", fmtFichas(r.cobrado)], ["Mejor premio", fmtFichas(r.mejor_premio)],
+      ];
+      $("kpis").innerHTML = k.map(([l, v]) => `<div class="kpi-c"><small>${l}</small><b>${v}</b></div>`).join("");
+
+      $("por-juego").innerHTML = r.por_juego.length ? r.por_juego.map((j) => {
+        const res = Number(j.premios) - Number(j.apostado);
+        return `<tr><td>${esc(nombreJuego(j.juego))}</td><td class="n">${fmtFichas(j.partidas)}</td><td class="n">${fmtFichas(j.apostado)}</td>
+                <td class="n">${fmtFichas(j.premios)}</td><td class="n ${clase(res)}">${signo(res)}</td></tr>`;
+      }).join("") : `<tr><td colspan="5" class="vacio">Todavía no jugaste.</td></tr>`;
+
+      $("movs").innerHTML = r.movimientos.length ? r.movimientos.map((m) =>
+        `<tr><td class="dim">${cuando(m.creado_en)}</td><td>${esc(textoMovimiento(m))}</td>
+         <td class="n ${clase(m.monto)}">${signo(m.monto)}</td><td class="n dim">${fmtFichas(m.saldo_resultante)}</td></tr>`).join("")
+        : `<tr><td colspan="4" class="vacio">Sin movimientos todavía.</td></tr>`;
+    }
+
+    async function cargar() {
+      try { pintar(await llamarRPC("mi_resumen")); }
+      catch (e) { $("neto-txt").textContent = "No se pudo cargar tu cuenta: " + e.message; }
+    }
+    cargar();
+    // Se actualiza sola si el saldo cambia (por ejemplo, si te cargan fichas)
+    Realtime.suscribir("yo", (ev) => { if (ev.tipo === "saldo" || ev.tipo === "reconectado") cargar(); });
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") cargar(); });
+  </script>
+</body>
+</html>

@@ -226,7 +226,8 @@
       if (Auth.getToken()) {
         zona.innerHTML = `
           <div style="display:flex; align-items:center; gap:10px;">
-            <div class="saldo">🪙 <span id="saldo">···</span></div>
+            <a href="cuenta.html" class="saldo" style="text-decoration:none;" title="Ver mi cuenta">🪙 <span id="saldo">···</span></a>
+            <a href="cuenta.html" class="btn-nav-login" style="background:transparent; border:1px solid rgba(255,255,255,.18); color:var(--text);">Mi cuenta</a>
             <button class="secundario" style="width:auto; padding:9px 14px; font-size:0.8rem;" onclick="Auth.cerrarSesion()">Salir</button>
           </div>`;
         obtenerMiSaldo().then(s => {
