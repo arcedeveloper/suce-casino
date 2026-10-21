@@ -50,9 +50,9 @@
       yo.innerHTML = cartaHTML(0); casa.innerHTML = cartaHTML(0);
       const data = await jugarCartaAlta(apuesta);
       await Efectos.esperar(250);
-      yo.innerHTML = cartaHTML(data.resultado.carta_jugador); void yo.offsetWidth; yo.firstElementChild.classList.add("abierta"); Sonido.tocar("tick");
+      yo.innerHTML = cartaHTML(data.resultado.carta_jugador); void yo.offsetWidth; yo.firstElementChild.classList.add("abierta"); Sonido.tocar("carta");
       await Efectos.esperar(Efectos.reducido ? 0 : 800);
-      casa.innerHTML = cartaHTML(data.resultado.carta_casa); void casa.offsetWidth; casa.firstElementChild.classList.add("abierta"); Sonido.tocar("tick");
+      casa.innerHTML = cartaHTML(data.resultado.carta_casa); void casa.offsetWidth; casa.firstElementChild.classList.add("abierta"); Sonido.tocar("carta");
       await Efectos.esperar(Efectos.reducido ? 0 : 900);
       if (data.ganancia > 0) yo.firstElementChild.classList.add("ganadora");
       Mesa.resultado({ apuesta, ganancia: data.ganancia });

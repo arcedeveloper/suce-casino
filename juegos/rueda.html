@@ -63,8 +63,8 @@
       vueltas++;
       rue.style.transition = Efectos.reducido ? "none" : "";
       rue.style.transform = `rotate(${vueltas * 1800 - idx * paso}deg)`;
-      const t = setInterval(() => Sonido.tocar("tick"), 200);
-      await Efectos.esperar(Efectos.reducido ? 0 : 4700); clearInterval(t);
+      const t = Sonido.giro(4700, 42);
+      await Efectos.esperar(Efectos.reducido ? 0 : 4700); t(); Sonido.tocar("stop");
       etq.textContent = m === 0 ? "Sin premio" : `×${String(m).replace(".", ",")}`; etq.classList.remove("premio-flash"); void etq.offsetWidth; etq.classList.add("premio-flash");
       await Efectos.esperar(250);
       Mesa.resultado({ apuesta, ganancia: data.ganancia });

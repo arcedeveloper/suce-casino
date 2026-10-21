@@ -116,11 +116,13 @@
         const data = await jugarTragamonedas(apuesta);
         const f = data.resultado.carretes;
         const base = 1500;
+        const parar = Sonido.giro(base + 2 * 600, 46);
         await Promise.all(carretes.map((r, i) => {
           const p = girar(r, f[i], 10 + i * 5, base + i * 600);
-          p.then(() => Sonido.tocar("tick"));
+          p.then(() => Sonido.tocar("stop"));
           return p;
         }));
+        parar();
         if (data.ganancia > 0 && f[0] === f[1] && f[1] === f[2]) carretes.forEach(r => r.c.classList.add("premio"));
         Mesa.resultado({ apuesta, ganancia: data.ganancia });
         Mesa.setSaldo(data.saldo_nuevo);

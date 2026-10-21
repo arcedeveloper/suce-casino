@@ -59,8 +59,8 @@
           const grados = giros * 1800 + (sale === "cruz" ? 180 : 0);
           moneda.style.transition = Efectos.reducido ? "none" : "";
           moneda.style.transform = `rotateY(${grados}deg)`;
-          Sonido.tocar("tick");
-          await Efectos.esperar(Efectos.reducido ? 0 : 2000);
+          const cortar = Sonido.giro(2000, 16);
+          await Efectos.esperar(Efectos.reducido ? 0 : 2000); cortar(); Sonido.tocar("stop");
           Mesa.resultado({ apuesta, ganancia: data.ganancia, detalle: `Salió ${sale}` });
           Mesa.setSaldo(data.saldo_nuevo);
         } finally { op.bloquear(false); }

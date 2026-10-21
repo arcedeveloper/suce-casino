@@ -62,7 +62,7 @@
           const data = await jugarHilo(apuesta, op.valor);
           act.innerHTML = cartaHTML(data.resultado.carta_actual); act.firstElementChild.classList.add("abierta");
           await Efectos.esperar(450);
-          abrir(nue, data.resultado.carta_nueva); Sonido.tocar("tick");
+          abrir(nue, data.resultado.carta_nueva); Sonido.tocar("carta");
           await Efectos.esperar(Efectos.reducido ? 0 : 900);
           if (data.ganancia > 0) nue.firstElementChild.classList.add("ganadora");
           Mesa.resultado({ apuesta, ganancia: data.ganancia });
