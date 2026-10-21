@@ -89,27 +89,58 @@ const Efectos = {
 // ---------------------------------------------------------------------
 const Sonido = {
   on: (() => { try { return (localStorage.getItem("suce_sonido") ?? "on") === "on"; } catch (e) { return true; } })(),
-  ctx: null,
+  ctx: null, master: null,
+  // El navegador solo permite audio después de un toque/click: lo "desbloqueamos" en el primer gesto.
   _c() {
-    if (!this.ctx) { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+    if (!this.ctx) {
+      try {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const comp = this.ctx.createDynamicsCompressor(), g = this.ctx.createGain();
+        g.gain.value = 1.0; g.connect(comp); comp.connect(this.ctx.destination); this.master = g;
+      } catch (e) { return null; }
+    }
     if (this.ctx.state === "suspended") this.ctx.resume();
     return this.ctx;
   },
-  nota(f, dur = 0.12, tipo = "sine", vol = 0.05, retraso = 0) {
+  nota(f, dur = 0.12, tipo = "sine", vol = 0.2, retraso = 0, fHasta = null) {
     const c = this._c(); if (!c) return;
     const o = c.createOscillator(), v = c.createGain(), t = c.currentTime + retraso;
     o.type = tipo; o.frequency.setValueAtTime(f, t);
-    v.gain.setValueAtTime(0.0001, t); v.gain.exponentialRampToValueAtTime(vol, t + 0.01); v.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(v).connect(c.destination); o.start(t); o.stop(t + dur + 0.02);
+    if (fHasta) o.frequency.exponentialRampToValueAtTime(fHasta, t + dur);
+    v.gain.setValueAtTime(0.0001, t); v.gain.exponentialRampToValueAtTime(vol, t + 0.008); v.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(v).connect(this.master); o.start(t); o.stop(t + dur + 0.03);
+  },
+  // Golpecito de ruido filtrado (clic de ruleta, ficha sobre el paño, carta)
+  ruido(dur = 0.04, freq = 2500, vol = 0.25, retraso = 0, q = 1.2) {
+    const c = this._c(); if (!c) return;
+    const n = Math.max(1, Math.floor(c.sampleRate * dur)), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
+    const src = c.createBufferSource(), f = c.createBiquadFilter(), v = c.createGain();
+    f.type = "bandpass"; f.frequency.value = freq; f.Q.value = q; v.gain.value = vol;
+    src.buffer = buf; src.connect(f).connect(v).connect(this.master); src.start(c.currentTime + retraso);
   },
   tocar(n) {
     if (!this.on) return;
-    if (n === "click") this.nota(760, 0.05, "square", 0.025);
-    else if (n === "ficha") { this.nota(1250, 0.06, "triangle", 0.05); this.nota(880, 0.08, "triangle", 0.04, 0.03); }
-    else if (n === "tick") this.nota(1000, 0.035, "square", 0.02);
-    else if (n === "win") [523, 659, 784, 1047].forEach((f, i) => this.nota(f, 0.2, "sine", 0.06, i * 0.09));
-    else if (n === "bigwin") [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => this.nota(f, 0.26, "triangle", 0.06, i * 0.08));
-    else if (n === "lose") { this.nota(240, 0.18, "sawtooth", 0.03); this.nota(170, 0.26, "sawtooth", 0.03, 0.12); }
+    if (n === "click") { this.ruido(0.03, 3200, 0.22); this.nota(900, 0.05, "triangle", 0.1); }
+    else if (n === "ficha") { this.nota(2100, 0.09, "triangle", 0.2); this.nota(3150, 0.12, "sine", 0.12, 0.03); this.ruido(0.05, 4500, 0.2); }
+    else if (n === "tick") { this.ruido(0.035, 2200, 0.35); this.nota(1400, 0.03, "square", 0.05); }
+    else if (n === "stop") { this.nota(180, 0.12, "sine", 0.35, 0, 80); this.ruido(0.06, 900, 0.3); }
+    else if (n === "carta") { this.ruido(0.09, 1800, 0.3, 0, 0.7); }
+    else if (n === "win") [523, 659, 784, 1047].forEach((f, i) => { this.nota(f, 0.28, "triangle", 0.22, i * 0.09); this.nota(f * 2, 0.2, "sine", 0.06, i * 0.09); });
+    else if (n === "bigwin") { [523, 659, 784, 1047, 1319, 1568, 2093].forEach((f, i) => { this.nota(f, 0.34, "triangle", 0.22, i * 0.08); this.nota(f * 2, 0.25, "sine", 0.07, i * 0.08); }); for (let i = 0; i < 6; i++) this.tocar_ficha_tarde(0.5 + i * 0.09); }
+    else if (n === "lose") { this.nota(330, 0.3, "sawtooth", 0.12, 0, 200); this.nota(220, 0.4, "sawtooth", 0.12, 0.18, 120); }
+  },
+  tocar_ficha_tarde(r) { this.nota(2400 + Math.random() * 900, 0.08, "triangle", 0.12, r); this.ruido(0.04, 4800, 0.15, r); },
+  // Giro con "clic clic clic" que se va frenando durante `ms` milisegundos. Devuelve una función para cortarlo.
+  giro(ms, clics = 38) {
+    let vivo = true; const t0 = performance.now(), timers = [];
+    if (this.on && !Efectos.reducido) {
+      for (let i = 0; i < clics; i++) {
+        const k = i / (clics - 1), cuando = ms * (1 - Math.pow(1 - k, 2.2)) * 0.97;   // al principio muy seguidos, al final espaciados
+        timers.push(setTimeout(() => { if (vivo) this.tocar("tick"); }, cuando));
+      }
+    }
+    return () => { vivo = false; timers.forEach(clearTimeout); };
   },
   alternar() {
     this.on = !this.on;
@@ -124,6 +155,8 @@ const Sonido = {
     host.prepend(b); this.pintarBoton();
   },
 };
+// Primer toque en cualquier parte de la página → el audio queda habilitado
+["pointerdown", "keydown", "touchstart"].forEach((ev) => document.addEventListener(ev, () => Sonido._c(), { once: true, passive: true }));
 
 // ---------------------------------------------------------------------
 // Rack de apuesta: fichas, pila visual y atajos
