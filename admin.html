@@ -168,10 +168,9 @@
           <select id="orden" onchange="renderUsuarios()">
             <option value="reciente">Más recientes</option>
             <option value="saldo">Mayor saldo</option>
-            <option value="gastado">Más fichas gastadas</option>
             <option value="jugadas">Más jugadas</option>
-            <option value="neto_asc">Más pérdidas (neto)</option>
-            <option value="neto_desc">Más ganancias (neto)</option>
+            <option value="neto_asc">Los que más perdieron</option>
+            <option value="neto_desc">Los que más ganaron</option>
             <option value="actividad">Última actividad</option>
           </select>
           <button class="secundario" onclick="exportarExcel()">⬇ Excel</button>
@@ -179,13 +178,13 @@
         <div class="tabla-wrap">
           <table class="t">
             <thead><tr>
-              <th>Jugador</th><th class="num">Saldo</th><th class="num">Cargado</th><th class="num">Gastado</th>
-              <th class="num">Ganado</th><th class="num">Neto</th><th class="num">Jugadas</th><th>Última actividad</th><th>Estado</th><th>Acciones</th>
+              <th>Jugador</th><th class="num">Saldo</th><th class="num">Fichas recibidas</th><th class="num">Ganó</th>
+              <th class="num">Perdió</th><th class="num">Resultado</th><th class="num">Jugadas</th><th>Última actividad</th><th>Estado</th><th>Acciones</th>
             </tr></thead>
             <tbody id="tbody-usuarios"><tr><td colspan="10" class="vacio">Cargando…</td></tr></tbody>
           </table>
         </div>
-        <p class="sub" style="margin-top:10px;">Neto = lo que el jugador ganó menos lo que apostó. Negativo = el jugador va perdiendo fichas.</p>
+        <p class="sub" style="margin-top:10px;"><b>Ganó</b> = lo que sumó en sus jugadas ganadas · <b>Perdió</b> = lo que restó en sus jugadas perdidas · <b>Resultado</b> = Ganó − Perdió. Verde: el jugador va ganando. Rojo: va perdiendo (y la casa gana).</p>
       </div>
     </section>
 
@@ -207,8 +206,8 @@
         <h3 style="margin-top:0;">Últimas partidas <span class="sub" style="font-weight:400; font-size:.75rem;">· en vivo</span></h3>
         <div class="tabla-wrap">
           <table class="t" style="min-width:600px;">
-            <thead><tr><th>Cuándo</th><th>Jugador</th><th>Juego</th><th class="num">Apostó</th><th class="num">Cobró</th><th class="num">Resultado</th></tr></thead>
-            <tbody id="tbody-actividad"><tr><td colspan="6" class="vacio">Cargando…</td></tr></tbody>
+            <thead><tr><th>Cuándo</th><th>Jugador</th><th>Juego</th><th class="num">Apostó</th><th class="num">Resultado</th></tr></thead>
+            <tbody id="tbody-actividad"><tr><td colspan="5" class="vacio">Cargando…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -229,7 +228,7 @@
       </div>
       <h4 style="margin:6px 0 8px; color:var(--gold-soft);">Por juego</h4>
       <div id="det-juegos" style="margin-bottom:14px;"></div>
-      <h4 style="margin:6px 0 8px; color:var(--gold-soft);">Últimos movimientos</h4>
+      <h4 style="margin:6px 0 8px; color:var(--gold-soft);">Últimas jugadas</h4>
       <div class="movs"><table class="t"><tbody id="det-movs"></tbody></table></div>
     </div>
   </div>
@@ -257,10 +256,11 @@
     const fmt = fmtFichas;   // punto de miles en todo el panel
     const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
     const signo = (n) => (n > 0 ? "+" : "") + fmt(n);
-    const clase = (n) => (n > 0 ? "pos" : n < 0 ? "neg" : "dim");
+    const resultadoDe = (u) => Number(u.ganado_neto || 0) - Number(u.perdido_neto || 0);   // ganó − perdió
+const clase = (n) => (n > 0 ? "pos" : n < 0 ? "neg" : "dim");
     const NOMBRES = {
       tragamonedas:"🎰 Tragamonedas", moneda:"🪙 Cara o Cruz", dados:"🎲 Dados", hilo:"📈 Alto o Bajo",
-      carta_alta:"🃏 Carta Más Alta", ruleta:"🎡 Ruleta", keno:"🔢 Keno", rasca:"🎟️ Rasca y Gana", rueda:"🎯 Rueda de la Suerte"
+      carta_alta:"🃏 Carta Más Alta", ruleta:"🎡 Ruleta", pvp_carta_alta:"⚡ En vivo: Carta Más Alta", pvp_dado_simple:"⚡ En vivo: Dado Más Alto", pvp_dados_dobles:"⚡ En vivo: Dados Dobles", pvp_numero_suerte:"⚡ En vivo: Número de la Suerte", pvp_ruleta_pvp:"⚡ En vivo: Ruleta", keno:"🔢 Keno", rasca:"🎟️ Rasca y Gana", rueda:"🎯 Rueda de la Suerte"
     };
     const nombreJuego = (id) => NOMBRES[id] || id;
     const TZ = "America/Asuncion";
@@ -317,16 +317,19 @@ async function cargarTodo(manual) {
 
     function renderKPIs() {
       const m = metricas;
-      const casa = m.total_apostado - m.total_premios;
-      const rtp = m.total_apostado > 0 ? Math.round((m.total_premios / m.total_apostado) * 1000) / 10 : 0;
+      const jug = usuarios.filter((u) => u.rol === "jugador");
+      const ganaron = jug.reduce((t, u) => t + Number(u.ganado_neto || 0), 0);     // lo que ganaron los jugadores
+      const perdieron = jug.reduce((t, u) => t + Number(u.perdido_neto || 0), 0);  // lo que perdieron los jugadores
+      const casa = perdieron - ganaron;                                            // positivo = la casa va ganando
       const k = [
         ["Jugadores", fmt(m.jugadores_total), `${fmt(m.jugadores_activos)} activos · ${fmt(m.jugadores_bloqueados)} bloqueados`, "acc"],
         ["En línea ahora", fmt(conectados()), "Jugadores con la página abierta", "acc"],
         ["Fichas en circulación", fmt(m.fichas_circulacion), "Saldo total de todos los jugadores", "acc"],
         ["Fichas cargadas", fmt(m.fichas_cargadas), "Total entregado desde el admin", ""],
         ["Total apostado", fmt(m.total_apostado), `${fmt(m.partidas_total)} jugadas en total`, ""],
-        ["Premios pagados", fmt(m.total_premios), `Retorno a jugadores: ${rtp}%`, ""],
-        ["Resultado de la casa", signo(casa), "Apostado − premios", casa >= 0 ? "pos" : "neg"],
+        ["Ganado por los jugadores", fmt(ganaron), "Suma de sus jugadas ganadas", ""],
+        ["Perdido por los jugadores", fmt(perdieron), "Suma de sus jugadas perdidas", ""],
+        ["Ganancia de la casa", signo(casa), casa >= 0 ? "La casa va ganando" : "Los jugadores van ganando", casa >= 0 ? "pos" : "neg"],
         ["Jugadas hoy", fmt(m.partidas_hoy), `${fmt(m.jugadores_hoy)} jugadores distintos hoy`, ""],
         ["Mesas en vivo", fmt(m.mesas_abiertas), `${fmt(m.mesas_jugadas)} mesas jugadas en total`, ""],
       ];
@@ -365,10 +368,9 @@ async function cargarTodo(manual) {
       const por = {
         reciente: (a, b) => new Date(b.creado_en) - new Date(a.creado_en),
         saldo: (a, b) => b.saldo - a.saldo,
-        gastado: (a, b) => b.gastado - a.gastado,
         jugadas: (a, b) => b.jugadas - a.jugadas,
-        neto_asc: (a, b) => a.neto - b.neto,
-        neto_desc: (a, b) => b.neto - a.neto,
+        neto_asc: (a, b) => resultadoDe(a) - resultadoDe(b),
+        neto_desc: (a, b) => resultadoDe(b) - resultadoDe(a),
         actividad: (a, b) => new Date(b.ultima_actividad || 0) - new Date(a.ultima_actividad || 0),
       };
       return l.sort(por[o]);
@@ -381,9 +383,9 @@ async function cargarTodo(manual) {
           <td class="u-nombre">${online.has(u.id) ? '<span class="dot-on" title="En línea ahora"></span>' : '<span class="dot-off" title="Desconectado"></span>'}${esc(u.username)}<small style="padding-left:15px;">creado ${esc(new Date(u.creado_en).toLocaleDateString("es-PY", { timeZone: TZ }))}</small></td>
           <td class="num"><b>${fmt(u.saldo)}</b></td>
           <td class="num dim">${fmt(u.cargado)}</td>
-          <td class="num">${fmt(u.gastado)}</td>
-          <td class="num">${fmt(u.ganado)}</td>
-          <td class="num ${clase(u.neto)}">${signo(u.neto)}</td>
+          <td class="num pos">${fmt(u.ganado_neto)}</td>
+          <td class="num neg">${fmt(u.perdido_neto)}</td>
+          <td class="num ${clase(resultadoDe(u))}"><b>${signo(resultadoDe(u))}</b></td>
           <td class="num">${fmt(u.jugadas)}</td>
           <td class="dim">${hace(u.ultima_actividad)}</td>
           <td><span class="badge ${u.activo ? "activo" : "inactivo"}">${u.activo ? "Activo" : "Bloqueado"}</span></td>
@@ -463,13 +465,13 @@ async function cargarTodo(manual) {
       };
       const columnas = [
         { titulo: "Usuario", ancho: 24, tipo: "texto" }, { titulo: "Saldo", ancho: 20, tipo: "num" },
-        { titulo: "Fichas cargadas", ancho: 24, tipo: "num" }, { titulo: "Fichas apostadas", ancho: 24, tipo: "num" },
-        { titulo: "Fichas ganadas", ancho: 24, tipo: "num" }, { titulo: "Resultado neto", ancho: 24, tipo: "num" },
+        { titulo: "Fichas recibidas", ancho: 24, tipo: "num" }, { titulo: "Total ganado", ancho: 24, tipo: "num" },
+        { titulo: "Total perdido", ancho: 24, tipo: "num" }, { titulo: "Resultado", ancho: 24, tipo: "num" },
         { titulo: "Partidas jugadas", ancho: 24, tipo: "num" }, { titulo: "Estado", ancho: 16, tipo: "texto" },
         { titulo: "Última actividad", ancho: 28, tipo: "fecha" },
       ];
-      const filas = usuariosFiltrados().map((u) => [u.username, Number(u.saldo || 0), Number(u.cargado || 0), Number(u.gastado || 0), Number(u.ganado || 0),
-        Number(u.neto || 0), Number(u.jugadas || 0), u.activo ? "Activo" : "Bloqueado", serial(u.ultima_actividad)]);
+      const filas = usuariosFiltrados().map((u) => [u.username, Number(u.saldo || 0), Number(u.cargado || 0), Number(u.ganado_neto || 0), Number(u.perdido_neto || 0),
+        resultadoDe(u), Number(u.jugadas || 0), u.activo ? "Activo" : "Bloqueado", serial(u.ultima_actividad)]);
       const hoy = new Date().toLocaleDateString("en-CA", { timeZone: TZ });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([_xlsx("Jugadores", columnas, filas)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
@@ -561,8 +563,8 @@ async function cargarTodo(manual) {
         $("det-sub").innerHTML = `Creado el ${esc(new Date(d.usuario.creado_en).toLocaleDateString("es-PY", { timeZone: TZ }))} · ` +
           `<span class="badge ${d.usuario.activo ? "activo" : "inactivo"}">${d.usuario.activo ? "Activo" : "Bloqueado"}</span>`;
         $("det-resumen").innerHTML = [
-          ["Saldo", fmt(d.saldo), ""], ["Cargado", fmt(u.cargado), ""], ["Gastado", fmt(u.gastado), ""],
-          ["Ganado", fmt(u.ganado), ""], ["Neto", signo(u.neto || 0), clase(u.neto || 0)], ["Jugadas", fmt(u.jugadas), ""],
+          ["Saldo", fmt(d.saldo), ""], ["Fichas recibidas", fmt(u.cargado), ""], ["Ganó", fmt(u.ganado_neto), "pos"],
+          ["Perdió", fmt(u.perdido_neto), "neg"], ["Resultado", signo(resultadoDe(u)), clase(resultadoDe(u))], ["Jugadas", fmt(u.jugadas), ""],
         ].map(([l, v, c]) => `<div><small>${l}</small><b class="${c}">${v}</b></div>`).join("");
         const btn = $("det-bloquear");
         btn.textContent = d.usuario.activo ? "⛔ Bloquear" : "✔ Desbloquear";
@@ -570,14 +572,16 @@ async function cargarTodo(manual) {
 
         $("det-juegos").innerHTML = d.por_juego.length ? d.por_juego.map((j) =>
           `<div class="hbar"><div class="fila"><span>${esc(nombreJuego(j.juego))}</span>
-           <span>${fmt(j.partidas)} jugadas · apostó ${fmt(j.apostado)} · cobró ${fmt(j.premios)}</span></div></div>`).join("")
+           <span>${fmt(j.jugadas ?? j.partidas)} jugadas · ganó <b class="pos">${fmt(j.ganado)}</b> · perdió <b class="neg">${fmt(j.perdido)}</b> · <b class="${clase(Number(j.ganado) - Number(j.perdido))}">${signo(Number(j.ganado) - Number(j.perdido))}</b></span></div></div>`).join("")
           : `<div class="dim" style="font-size:.88rem;">Todavía no jugó.</div>`;
 
-        $("det-movs").innerHTML = d.movimientos.length ? d.movimientos.map((m) => `
-          <tr><td class="dim">${fechaHora(m.creado_en)}</td><td>${esc(TIPO_TXT[m.tipo] || m.tipo)}</td>
-          <td class="dim">${esc(m.tipo === "carga_admin" ? "" : (NOMBRES[m.referencia] || m.referencia || ""))}</td>
-          <td class="num ${clase(m.monto)}">${signo(m.monto)}</td><td class="num dim">${fmt(m.saldo_resultante)}</td></tr>`).join("")
-          : `<tr><td class="vacio">Sin movimientos.</td></tr>`;
+        $("det-movs").innerHTML = (d.rondas || []).length ? d.rondas.map((m) => {
+          const n = Number(m.neto);
+          const que = m.tipo === "carga" ? "Fichas cargadas" : nombreJuego(m.juego);
+          const txt = m.tipo === "carga" ? `Recibió ${signo(n)}` : n > 0 ? `Ganó ${fmt(n)}` : n < 0 ? `Perdió ${fmt(-n)}` : "Empate";
+          return `<tr><td class="dim">${fechaHora(m.creado_en)}</td><td>${esc(que)}</td>
+            <td class="num ${m.tipo === "carga" ? "" : clase(n)}"><b>${txt}</b></td></tr>`;
+        }).join("") : `<tr><td class="vacio">Todavía no jugó.</td></tr>`;
       } catch (e) { $("det-titulo").textContent = "Error"; $("det-sub").textContent = e.message; }
     }
     function cerrarDetalle() { $("modal-detalle").classList.remove("abierto"); detId = null; }
@@ -585,9 +589,9 @@ async function cargarTodo(manual) {
       $("tbody-actividad").innerHTML = lista.length ? lista.map((p) => {
         const res = p.ganancia - p.apuesta;
         return `<tr class="${p._nuevo ? "feed-nuevo" : ""}"><td class="dim">${hace(p.creado_en)}</td><td class="u-nombre">${esc(p.username)}</td>
-          <td>${esc(nombreJuego(p.juego))}</td><td class="num">${fmt(p.apuesta)}</td><td class="num">${fmt(p.ganancia)}</td>
-          <td class="num ${clase(res)}">${signo(res)}</td></tr>`;
-      }).join("") : `<tr><td colspan="6" class="vacio">Todavía no hubo partidas.</td></tr>`;
+          <td>${esc(nombreJuego(p.juego))}</td><td class="num">${fmt(p.apuesta)}</td>
+          <td class="num ${clase(res)}"><b>${res > 0 ? "Ganó " + fmt(res) : res < 0 ? "Perdió " + fmt(-res) : "Empate"}</b></td></tr>`;
+      }).join("") : `<tr><td colspan="5" class="vacio">Todavía no hubo partidas.</td></tr>`;
       if (lista.some((p) => p._nuevo)) setTimeout(() => lista.forEach((p) => delete p._nuevo), 1400);
     }
     let catalogo = [];

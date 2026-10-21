@@ -89,7 +89,7 @@
     <div class="seccion-header">
       <div class="kicker">En vivo</div>
       <h2>Ganadores recientes</h2>
-      <p>Los que más fichas virtuales acumularon jugando en SUCE</p>
+      <p>Los jugadores que más fichas ganaron en SUCE</p>
     </div>
     <div class="ticker-wrap">
       <div class="ticker" id="ticker-ranking">
@@ -137,7 +137,7 @@
     <div class="seccion-header">
       <div class="kicker">Justo ahora</div>
       <h2>Actividad en vivo</h2>
-      <p>Ganancias recientes de otros jugadores en SUCE</p>
+      <p>Premios recientes de otros jugadores en SUCE</p>
     </div>
     <div class="actividad-lista" id="actividad-lista">
       <div class="actividad-item"><span class="punto-vivo"></span> Cargando actividad...</div>
@@ -226,18 +226,29 @@
       if (Auth.getToken()) {
         zona.innerHTML = `
           <div style="display:flex; align-items:center; gap:10px;">
-            <a href="cuenta.html" class="saldo" style="text-decoration:none;" title="Ver mi cuenta">🪙 <span id="saldo">···</span></a>
+            <div class="saldo">🪙 <span id="saldo">···</span></div>
             <a href="cuenta.html" class="btn-nav-login" style="background:transparent; border:1px solid rgba(255,255,255,.18); color:var(--text);">Mi cuenta</a>
             <button class="secundario" style="width:auto; padding:9px 14px; font-size:0.8rem;" onclick="Auth.cerrarSesion()">Salir</button>
           </div>`;
-        obtenerMiSaldo().then(s => {
-          const el = document.getElementById("saldo");
-          if (el) el.textContent = fmtFichas(s);
-        }).catch(() => {});
+        actualizarSaldo();
       } else {
         zona.innerHTML = `<a href="login.html" class="btn-nav-login">Iniciar sesión</a>`;
       }
     }
+
+    // El saldo se vuelve a pedir al volver de un juego, al volver a la pestaña y cada 15 s
+    async function actualizarSaldo() {
+      if (!Auth.getToken()) return;
+      try {
+        const n = await obtenerMiSaldo();
+        const el = document.getElementById("saldo");
+        if (el && typeof n === "number") el.textContent = fmtFichas(n);
+      } catch (e) {}
+    }
+    window.addEventListener("pageshow", actualizarSaldo);                     // volver atrás desde un juego
+    window.addEventListener("focus", actualizarSaldo);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") actualizarSaldo(); });
+    setInterval(() => { if (document.visibilityState === "visible") actualizarSaldo(); }, 15000);
 
     function irAJuego(ruta, disponible) {
       if (!disponible) {
@@ -316,7 +327,7 @@
       try {
         const filas = await obtenerRanking();
         if (!filas || filas.length === 0) {
-          cont.innerHTML = '<div class="ticker-card"><div class="monto-t">Todavía nadie jugó</div></div>';
+          cont.innerHTML = '<div class="ticker-card"><div class="monto-t">Todavía no hay ganadores. ¡Podés ser el primero!</div></div>';
           return;
         }
         const medallas = ["🥇","🥈","🥉"];
