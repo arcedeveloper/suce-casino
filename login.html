@@ -60,20 +60,15 @@
     </div>
 
  <p class="aviso">
-  <b>Casino Online.</b> Apuestas con dinero real. +18. Juega responsablemente.
+  <b>Entretenimiento con fichas virtuales.</b> Sin dinero real. +18. Jugá con responsabilidad.
 </p>
 
   <script src="js/api.js"></script>
   <script>
     // Entrar a esta pantalla siempre cierra la sesión anterior: hay que escribir usuario y contraseña de nuevo
-    const esAdmin = new URLSearchParams(location.search).get("rol") === "admin";
-    Auth.olvidar(esAdmin ? "admin" : "jugador");
-
-    // ?rol=admin → pantalla de acceso del administrador (la sesión del admin y la del jugador conviven)
-    if (esAdmin) {
-      document.getElementById("tagline").textContent = "Acceso administrador";
-      document.title = "SUCE — Acceso administrador";
-    }
+    // Un solo login para todos: al entrar acá se cierra cualquier sesión de esta pestaña.
+    Auth.olvidar("admin");
+    Auth.olvidar("jugador");
 
     document.getElementById("btn-ojo").addEventListener("click", (e) => {
       const inp = document.getElementById("password"), b = e.currentTarget, ver = inp.type === "password";

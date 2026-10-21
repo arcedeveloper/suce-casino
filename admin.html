@@ -254,7 +254,7 @@
     Auth.requiereSesion("admin");
 
     const $ = (id) => document.getElementById(id);
-    const fmt = (n) => Number(n || 0).toLocaleString("es-PY");
+    const fmt = fmtFichas;   // punto de miles en todo el panel
     const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
     const signo = (n) => (n > 0 ? "+" : "") + fmt(n);
     const clase = (n) => (n > 0 ? "pos" : n < 0 ? "neg" : "dim");

@@ -151,7 +151,7 @@
     </div>
     <details class="faq-item">
       <summary>¿Las fichas tienen valor real?</summary>
-      <p>Si. Las fichas de SUCE son 100% virtuales, una vez acumulado la ganancia, procedemos a realizar el pago. </p>
+      <p>No. Las fichas de SUCE son 100% virtuales: sirven para jugar y divertirte, y no se pueden cambiar por dinero.</p>
     </details>
     <details class="faq-item">
       <summary>¿Cómo consigo fichas?</summary>
@@ -169,8 +169,8 @@
 
   <footer class="footer-lobby">
     <span class="marca-footer"><span class="logo-c" role="img" aria-label="Logo SUCE"></span> SUCE</span>
-    Casino Online con apuestas en dinero real. Exclusivo para mayores de 18 años.
-    El juego puede causar adicción. Juega con responsabilidad.
+    Entretenimiento con fichas virtuales, sin dinero real. Exclusivo para mayores de 18 años.
+    Jugá con responsabilidad.
   </footer>
 
   <script src="js/api.js"></script>
@@ -231,7 +231,7 @@
           </div>`;
         obtenerMiSaldo().then(s => {
           const el = document.getElementById("saldo");
-          if (el) el.textContent = s;
+          if (el) el.textContent = fmtFichas(s);
         }).catch(() => {});
       } else {
         zona.innerHTML = `<a href="login.html" class="btn-nav-login">Iniciar sesión</a>`;
@@ -323,7 +323,7 @@
           <div class="ticker-card">
             <div class="medalla">${medallas[i] || "🎖️"}</div>
             <div class="nombre-t">${f.username}</div>
-            <div class="monto-t">🪙 ${f.total_ganado}</div>
+            <div class="monto-t">🪙 ${fmtFichas(f.total_ganado)}</div>
           </div>
         `).join("");
       } catch (e) {
@@ -358,7 +358,7 @@
         cont.innerHTML = filas.map(f => `
           <div class="actividad-item">
             <span class="punto-vivo"></span>
-            <span><b>${f.username}</b> ganó <b>🪙 ${f.ganancia}</b> en ${NOMBRES_JUEGO[f.juego_id] || f.juego_id}</span>
+            <span><b>${f.username}</b> ganó <b>🪙 ${fmtFichas(f.ganancia)}</b> en ${NOMBRES_JUEGO[f.juego_id] || f.juego_id}</span>
             <span class="hace">${tiempoRelativo(f.creado_en)}</span>
           </div>
         `).join("");
