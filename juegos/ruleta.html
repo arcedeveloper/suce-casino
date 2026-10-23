@@ -93,7 +93,7 @@
         rul.style.transition = Efectos.reducido ? "none" : "";
         rul.style.transform = `rotate(${vueltas * 1800 - idx * paso}deg)`;
         const t = Sonido.giro(4700, 42);
-        await Efectos.esperar(Efectos.reducido ? 0 : 4700); t(); Sonido.tocar("stop");
+        await Efectos.esperar(Efectos.reducido ? 0 : 4700); t(); Sonido.tocar("rebote");
         grande.textContent = n; grande.className = "numero-grande " + (data.resultado.color || colorDe(n));
         await Efectos.esperar(300);
         Mesa.resultado({ apuesta, ganancia: data.ganancia, detalle: `Salió ${n} (${data.resultado.color})` });

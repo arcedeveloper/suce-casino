@@ -116,7 +116,7 @@
         const data = await jugarTragamonedas(apuesta);
         const f = data.resultado.carretes;
         const base = 1500;
-        const parar = Sonido.giro(base + 2 * 600, 46);
+        const parar = Sonido.giro(base + 2 * 600, 46, "motor");
         await Promise.all(carretes.map((r, i) => {
           const p = girar(r, f[i], 10 + i * 5, base + i * 600);
           p.then(() => Sonido.tocar("stop"));

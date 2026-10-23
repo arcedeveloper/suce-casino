@@ -60,7 +60,7 @@
           moneda.style.transition = Efectos.reducido ? "none" : "";
           moneda.style.transform = `rotateY(${grados}deg)`;
           const cortar = Sonido.giro(2000, 16);
-          await Efectos.esperar(Efectos.reducido ? 0 : 2000); cortar(); Sonido.tocar("stop");
+          await Efectos.esperar(Efectos.reducido ? 0 : 2000); cortar(); Sonido.tocar("moneda");
           Mesa.resultado({ apuesta, ganancia: data.ganancia, detalle: `Salió ${sale}` });
           Mesa.setSaldo(data.saldo_nuevo);
         } finally { op.bloquear(false); }
