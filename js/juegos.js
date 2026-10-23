@@ -89,19 +89,52 @@ const Efectos = {
 // ---------------------------------------------------------------------
 const Sonido = {
   on: (() => { try { return (localStorage.getItem("suce_sonido") ?? "on") === "on"; } catch (e) { return true; } })(),
-  ctx: null, master: null,
-  // El navegador solo permite audio después de un toque/click: lo "desbloqueamos" en el primer gesto.
+  ctx: null, master: null, buf: {}, _cargado: false,
+
+  // ---- Motor de audio: volumen general + compresor + un poco de eco de sala ----
   _c() {
     if (!this.ctx) {
       try {
-        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const comp = this.ctx.createDynamicsCompressor(), g = this.ctx.createGain();
-        g.gain.value = 1.0; g.connect(comp); comp.connect(this.ctx.destination); this.master = g;
+        const c = this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const comp = c.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
+        const g = c.createGain(); g.gain.value = 1;
+        // eco de sala sintético (ruido que decae)
+        const largo = Math.floor(c.sampleRate * 1.5), imp = c.createBuffer(2, largo, c.sampleRate);
+        for (let ch = 0; ch < 2; ch++) { const d = imp.getChannelData(ch); for (let i = 0; i < largo; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / largo, 2.6); }
+        const conv = c.createConvolver(); conv.buffer = imp;
+        const humedo = c.createGain(); humedo.gain.value = 0.2;
+        g.connect(comp); g.connect(humedo); humedo.connect(conv); conv.connect(comp); comp.connect(c.destination);
+        this.master = g;
       } catch (e) { return null; }
     }
     if (this.ctx.state === "suspended") this.ctx.resume();
+    if (!this._cargado) { this._cargado = true; this._cargarArchivos(); }
     return this.ctx;
   },
+
+  // ---- Sonidos reales opcionales: si existe /sonidos/sonidos.json se usan; si no, suena el generado ----
+  async _cargarArchivos() {
+    try {
+      const raiz = typeof RAIZ !== "undefined" ? RAIZ : "../";
+      const r = await fetch(raiz + "sonidos/sonidos.json", { cache: "no-cache" });
+      if (!r.ok) return;
+      const lista = await r.json();
+      await Promise.all(Object.entries(lista).map(async ([nombre, archivo]) => {
+        try {
+          const res = await fetch(raiz + "sonidos/" + archivo); if (!res.ok) return;
+          this.buf[nombre] = await this.ctx.decodeAudioData(await res.arrayBuffer());
+        } catch (e) {}
+      }));
+    } catch (e) {}
+  },
+  _archivo(n, vol = 0.9) {
+    const c = this._c(); if (!c) return;
+    const src = c.createBufferSource(), g = c.createGain();
+    src.buffer = this.buf[n]; src.playbackRate.value = 0.97 + Math.random() * 0.06; g.gain.value = vol;
+    src.connect(g).connect(this.master); src.start();
+  },
+
+  // ---- Piezas básicas ----
   nota(f, dur = 0.12, tipo = "sine", vol = 0.2, retraso = 0, fHasta = null) {
     const c = this._c(); if (!c) return;
     const o = c.createOscillator(), v = c.createGain(), t = c.currentTime + retraso;
@@ -110,7 +143,10 @@ const Sonido = {
     v.gain.setValueAtTime(0.0001, t); v.gain.exponentialRampToValueAtTime(vol, t + 0.008); v.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(v).connect(this.master); o.start(t); o.stop(t + dur + 0.03);
   },
-  // Golpecito de ruido filtrado (clic de ruleta, ficha sobre el paño, carta)
+  // Campana / metal: varios tonos que no son múltiplos exactos (suena a ficha, moneda, campanilla)
+  campana(f, dur = 0.6, vol = 0.16, retraso = 0) {
+    [[1, 1, 1], [2.76, 0.55, 0.7], [5.4, 0.3, 0.45], [8.93, 0.14, 0.3]].forEach(([m, a, d]) => this.nota(f * m, dur * d, "sine", vol * a, retraso));
+  },
   ruido(dur = 0.04, freq = 2500, vol = 0.25, retraso = 0, q = 1.2) {
     const c = this._c(); if (!c) return;
     const n = Math.max(1, Math.floor(c.sampleRate * dur)), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
@@ -119,25 +155,55 @@ const Sonido = {
     f.type = "bandpass"; f.frequency.value = freq; f.Q.value = q; v.gain.value = vol;
     src.buffer = buf; src.connect(f).connect(v).connect(this.master); src.start(c.currentTime + retraso);
   },
-  tocar(n) {
-    if (!this.on) return;
-    if (n === "click") { this.ruido(0.03, 3200, 0.22); this.nota(900, 0.05, "triangle", 0.1); }
-    else if (n === "ficha") { this.nota(2100, 0.09, "triangle", 0.2); this.nota(3150, 0.12, "sine", 0.12, 0.03); this.ruido(0.05, 4500, 0.2); }
-    else if (n === "tick") { this.ruido(0.035, 2200, 0.35); this.nota(1400, 0.03, "square", 0.05); }
-    else if (n === "stop") { this.nota(180, 0.12, "sine", 0.35, 0, 80); this.ruido(0.06, 900, 0.3); }
-    else if (n === "carta") { this.ruido(0.09, 1800, 0.3, 0, 0.7); }
-    else if (n === "win") [523, 659, 784, 1047].forEach((f, i) => { this.nota(f, 0.28, "triangle", 0.22, i * 0.09); this.nota(f * 2, 0.2, "sine", 0.06, i * 0.09); });
-    else if (n === "bigwin") { [523, 659, 784, 1047, 1319, 1568, 2093].forEach((f, i) => { this.nota(f, 0.34, "triangle", 0.22, i * 0.08); this.nota(f * 2, 0.25, "sine", 0.07, i * 0.08); }); for (let i = 0; i < 6; i++) this.tocar_ficha_tarde(0.5 + i * 0.09); }
-    else if (n === "lose") { this.nota(330, 0.3, "sawtooth", 0.12, 0, 200); this.nota(220, 0.4, "sawtooth", 0.12, 0.18, 120); }
+  // Soplido que sube o baja de tono (carta que se desliza, subida de tensión)
+  barrido(dur, f0, f1, vol = 0.25, retraso = 0) {
+    const c = this._c(); if (!c) return;
+    const n = Math.floor(c.sampleRate * dur), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / n);
+    const src = c.createBufferSource(), f = c.createBiquadFilter(), v = c.createGain(), t = c.currentTime + retraso;
+    f.type = "bandpass"; f.Q.value = 1.4; f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    v.gain.value = vol; src.buffer = buf; src.connect(f).connect(v).connect(this.master); src.start(t);
   },
-  tocar_ficha_tarde(r) { this.nota(2400 + Math.random() * 900, 0.08, "triangle", 0.12, r); this.ruido(0.04, 4800, 0.15, r); },
-  // Giro con "clic clic clic" que se va frenando durante `ms` milisegundos. Devuelve una función para cortarlo.
-  giro(ms, clics = 38) {
-    let vivo = true; const t0 = performance.now(), timers = [];
-    if (this.on && !Efectos.reducido) {
+  _r: () => 0.96 + Math.random() * 0.08,   // pequeña variación para que no suene siempre igual
+
+  tocar(n, extra) {
+    if (!this.on) return;
+    if (this.buf[n]) return this._archivo(n);
+    const r = this._r();
+    switch (n) {
+      case "click":  this.ruido(0.02, 3800, 0.2); this.nota(1200 * r, 0.03, "triangle", 0.06); break;
+      case "ficha":  this.campana(2300 * r, 0.4, 0.13); this.campana(3500 * r, 0.25, 0.07, 0.03); this.ruido(0.03, 5200, 0.16); break;
+      case "tick":   this.ruido(0.03, 2400 * r, 0.3); this.nota(720 * r, 0.025, "square", 0.05); break;
+      case "stop":   this.nota(160, 0.18, "sine", 0.42, 0, 70); this.ruido(0.07, 1000, 0.3); this.ruido(0.03, 3000, 0.2, 0.02); break;
+      case "rebote": [0, .09, .17, .23, .28, .32].forEach((t, i) => { this.ruido(0.03, 3200 - i * 250, 0.26 - i * 0.03, t); this.nota((900 - i * 70) * r, 0.03, "square", 0.04, t); }); break;
+      case "carta":  this.barrido(0.14, 1200, 5200, 0.3); this.ruido(0.03, 2500, 0.15, 0.12); break;
+      case "dado":   [0, .07, .15, .21, .28, .33].forEach((t) => this.ruido(0.04, 1400 + Math.random() * 1600, 0.3, t)); break;
+      case "moneda": this.campana(1900 * r, 0.9, 0.16); this.campana(2850 * r, 0.7, 0.09); this.ruido(0.04, 6000, 0.2); break;
+      case "win":    [523, 659, 784, 1047].forEach((f, i) => { this.campana(f, 0.8, 0.15, i * 0.1); }); this.campana(2093, 0.9, 0.07, 0.38); this.ruido(0.1, 7000, 0.08, 0.38); break;
+      case "bigwin": {
+        this.barrido(0.5, 400, 6500, 0.22);
+        [523, 659, 784, 1047, 1319, 1568, 2093].forEach((f, i) => { this.campana(f, 1.0, 0.15, 0.45 + i * 0.09); });
+        this.nota(131, 0.9, "triangle", 0.3, 0.45); this.nota(196, 0.9, "triangle", 0.22, 0.45);
+        for (let i = 0; i < 14; i++) { const t = 0.7 + i * 0.07 + Math.random() * 0.03; this.campana(2200 + Math.random() * 1400, 0.25, 0.08, t); this.ruido(0.03, 5000, 0.12, t); }
+        break;
+      }
+      case "lose":   this.nota(392, 0.35, "sawtooth", 0.09, 0, 250); this.nota(294, 0.55, "sawtooth", 0.09, 0.2, 170); break;
+    }
+  },
+  // Giro: "clic clic clic" que se va frenando durante `ms`. tipo "motor" agrega el zumbido de una máquina girando.
+  giro(ms, clics = 38, tipo = "clic") {
+    let vivo = true; const timers = [], c = this.on && !Efectos.reducido ? this._c() : null;
+    if (c) {
       for (let i = 0; i < clics; i++) {
-        const k = i / (clics - 1), cuando = ms * (1 - Math.pow(1 - k, 2.2)) * 0.97;   // al principio muy seguidos, al final espaciados
+        const k = i / (clics - 1), cuando = ms * (1 - Math.pow(1 - k, 2.2)) * 0.97;
         timers.push(setTimeout(() => { if (vivo) this.tocar("tick"); }, cuando));
+      }
+      if (tipo === "motor") {
+        const t = c.currentTime, o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain(), d = ms / 1000;
+        o.type = "sawtooth"; o.frequency.setValueAtTime(70, t); o.frequency.exponentialRampToValueAtTime(190, t + d * 0.25); o.frequency.exponentialRampToValueAtTime(55, t + d);
+        f.type = "lowpass"; f.frequency.value = 520;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.1, t + 0.12); g.gain.setValueAtTime(0.1, t + d * 0.7); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+        o.connect(f).connect(g).connect(this.master); o.start(t); o.stop(t + d + 0.05);
       }
     }
     return () => { vivo = false; timers.forEach(clearTimeout); };
