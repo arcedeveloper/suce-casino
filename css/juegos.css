@@ -223,3 +223,87 @@ details.reglas td:last-child { text-align: right; color: var(--neon-suave); font
 /* ---------- Rueda de la suerte ---------- */
 .premio-flash { animation: premioFlash .9s ease-out; }
 @keyframes premioFlash { 0% { transform: scale(1); } 40% { transform: scale(1.12); } 100% { transform: scale(1); } }
+
+/* =====================================================================
+   ACABADO PREMIUM (todos los juegos): máquina con luces, brillos y botón grande
+   ===================================================================== */
+body:has(.juego-wrap) {
+  background:
+    radial-gradient(900px 560px at 50% 26%, rgba(18, 90, 86, .55) 0%, rgba(8, 30, 34, .35) 45%, transparent 75%),
+    var(--bg);
+}
+/* Destellos y monedas quietas de fondo */
+.juego-wrap::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .8;
+  background:
+    radial-gradient(circle at 8% 22%,  rgba(94,234,212,.9) 0 1.5px, transparent 5px),
+    radial-gradient(circle at 15% 68%, rgba(94,234,212,.7) 0 1.5px, transparent 5px),
+    radial-gradient(circle at 22% 40%, rgba(230,184,74,.85) 0 2px, transparent 7px),
+    radial-gradient(circle at 30% 88%, rgba(94,234,212,.6) 0 1.5px, transparent 5px),
+    radial-gradient(circle at 78% 18%, rgba(230,184,74,.85) 0 2px, transparent 7px),
+    radial-gradient(circle at 86% 52%, rgba(94,234,212,.8) 0 1.5px, transparent 5px),
+    radial-gradient(circle at 92% 82%, rgba(230,184,74,.7) 0 2px, transparent 7px),
+    radial-gradient(circle at 70% 92%, rgba(94,234,212,.6) 0 1.5px, transparent 5px),
+    radial-gradient(circle at 4% 52%,  rgba(230,184,74,.6) 0 2px, transparent 7px),
+    radial-gradient(circle at 95% 30%, rgba(94,234,212,.7) 0 1.5px, transparent 5px);
+}
+
+/* Título y saldo con brillo */
+.juego-top .marca { font-weight: 900; letter-spacing: 1.5px; filter: drop-shadow(0 0 14px rgba(45,212,191,.55)); }
+.saldo-pill {
+  background: rgba(8, 30, 34, .78); border-color: rgba(94,234,212,.45); color: #c8fff4;
+  box-shadow: 0 0 22px rgba(45,212,191,.22), inset 0 0 12px rgba(45,212,191,.1);
+}
+
+/* La mesa pasa a ser una "máquina": marco metálico, filo dorado y luces arriba y abajo */
+.mesa {
+  padding-top: 34px; padding-bottom: 96px;
+  border: 2px solid rgba(94,234,212,.5);
+  box-shadow:
+    inset 0 0 0 7px rgba(7, 26, 31, 0.92),
+    inset 0 0 0 8px rgba(230,184,74,.5),
+    inset 0 0 60px rgba(0,0,0,.45),
+    0 0 0 1px rgba(0,0,0,.6),
+    0 0 46px rgba(45,212,191,.4),
+    0 30px 60px rgba(0,0,0,.6);
+}
+.mesa::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 3; border-radius: inherit;
+  --b1: radial-gradient(circle at 14px 6px, #fff 0 1.5px, #5eead4 2.6px, rgba(94,234,212,.45) 4.5px, transparent 7px);
+  --b2: radial-gradient(circle at 42px 6px, #fff8d6 0 1.5px, #e6b84a 2.6px, rgba(230,184,74,.45) 4.5px, transparent 7px);
+  background:
+    var(--b1) 6px 5px / 56px 14px repeat-x, var(--b2) 6px 5px / 56px 14px repeat-x,
+    var(--b1) 6px calc(100% - 5px) / 56px 14px repeat-x, var(--b2) 6px calc(100% - 5px) / 56px 14px repeat-x;
+  background-repeat: repeat-x; animation: luces 2.2s ease-in-out infinite alternate;
+}
+@keyframes luces { from { filter: brightness(.8); } to { filter: brightness(1.3); } }
+.mesa-titulo { color: #7fe5d4; letter-spacing: 2.5px; font-size: .78rem; text-transform: uppercase; }
+
+/* Fichas con más relieve y brillo al pasar el mouse */
+.chip-svg { filter: drop-shadow(0 6px 8px rgba(0,0,0,.65)); }
+button.chip:hover .chip-svg { filter: drop-shadow(0 8px 12px rgba(0,0,0,.7)) drop-shadow(0 0 10px rgba(94,234,212,.55)); }
+.rack { border-color: rgba(94,234,212,.2); box-shadow: 0 14px 34px rgba(0,0,0,.5), 0 0 30px rgba(45,212,191,.08); }
+
+/* Botón principal: grande, redondo y luminoso */
+button.btn-jugar {
+  padding: 20px; border-radius: 999px; font-size: 1.3rem; font-weight: 800; letter-spacing: 3px; text-transform: uppercase;
+  background: linear-gradient(180deg, #92f6e6 0%, #2dd4bf 55%, #0f9488 100%); color: #03211d;
+  box-shadow: 0 0 0 4px rgba(255,255,255,.1), 0 0 42px rgba(45,212,191,.6), 0 16px 26px rgba(0,0,0,.55), inset 0 3px 0 rgba(255,255,255,.55);
+  transition: transform .12s ease, box-shadow .2s ease;
+}
+button.btn-jugar:hover:not(:disabled) { filter: none; transform: translateY(-2px); box-shadow: 0 0 0 4px rgba(255,255,255,.14), 0 0 56px rgba(45,212,191,.85), 0 20px 30px rgba(0,0,0,.55), inset 0 3px 0 rgba(255,255,255,.6); }
+button.btn-jugar:active:not(:disabled) { transform: translateY(1px) scale(.99); }
+
+/* Cartel de resultado: premio en pastilla luminosa */
+.resultado.gana {
+  background: linear-gradient(180deg, #a6f8ea, #2dd4bf); border-color: rgba(255,255,255,.7);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.25), 0 0 50px rgba(45,212,191,.95), 0 14px 28px rgba(0,0,0,.55);
+}
+.resultado.gana .grande { color: #052b25; text-shadow: none; }
+.resultado.gana .chico { color: rgba(5,43,37,.8); font-weight: 600; }
+
+@media (max-width: 520px) {
+  .mesa { padding-top: 30px; }
+  button.btn-jugar { font-size: 1.12rem; letter-spacing: 2px; padding: 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .mesa::after { animation: none; } }
