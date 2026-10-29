@@ -74,7 +74,7 @@
         <div class="duelo-pvp">
           <div><div class="sub">Vos</div><div class="carta-visual" id="carta-vos">?</div></div>
           <div class="vs-pvp">VS</div>
-          <div><div class="sub">Rival</div><div class="carta-visual" id="carta-rival">?</div></div>
+          <div><div class="sub" id="nombre-rival">Rival</div><div class="carta-visual" id="carta-rival">?</div></div>
         </div>
         <div class="mensaje" id="mensaje-resultado"></div>
         <button onclick="volverAlInicio()">Jugar otra vez</button>
@@ -133,7 +133,7 @@
           <div class="mesa-item">
             <span class="punto-vivo-chico"></span>
             <div class="mesa-info"><b>${m.creador_username}</b> apostó 🪙 ${fmtFichas(m.apuesta)}</div>
-            <button onclick="unirseAMesa(${m.id})">Unirme</button>
+            <button onclick="unirseAMesa(${m.id}, '${m.creador_username}')">Unirme</button>
           </div>
         `).join("");
       } catch (e) {
@@ -183,7 +183,7 @@
         if (id !== mesaActualId) return;               // ya cambié de mesa mientras esperaba la respuesta
         if (data.estado === "terminada") {
           dejarDeEscucharMesa();
-          mostrarResultado(data.carta_creador, data.carta_oponente, data.yo_gane, data.hubo_empate);
+          mostrarResultado(data.carta_creador, data.carta_oponente, data.yo_gane, data.hubo_empate, false, data.oponente_username);
         } else if (data.estado === "cancelada") {
           dejarDeEscucharMesa();
           alert("Tu mesa se cerró por falta de conexión. Te devolvimos las fichas.");
@@ -195,10 +195,10 @@
       }
     }
 
-    async function unirseAMesa(mesaId) {
+    async function unirseAMesa(mesaId, rival) {
       try {
         const data = await pvpUnirseMesa(mesaId);
-        mostrarResultado(data.carta_creador, data.carta_oponente, data.yo_gane, data.ganador_id === null, true);
+        mostrarResultado(data.carta_creador, data.carta_oponente, data.yo_gane, data.ganador_id === null, true, rival);
         cargarSaldo();
       } catch (e) {
         alert(e.message);
@@ -206,7 +206,8 @@
       }
     }
 
-    function mostrarResultado(valorCreador, valorOponente, yoGane, huboEmpate, soyOponente = false) {
+    function mostrarResultado(valorCreador, valorOponente, yoGane, huboEmpate, soyOponente = false, nombreRival = "") {
+      document.getElementById("nombre-rival").textContent = nombreRival ? "Rival: " + nombreRival : "Rival";
       const miValor = soyOponente ? valorOponente : valorCreador;
       const valorRival = soyOponente ? valorCreador : valorOponente;
       document.getElementById("carta-vos").textContent = cfg.formatear(miValor);
@@ -267,7 +268,7 @@
         if (!m || m.juego !== juego) return;
         mesaActualId = m.id;
         if (m.estado === "esperando") esperarRival(m.apuesta);
-        else if (m.estado === "terminada") mostrarResultado(m.carta_creador, m.carta_oponente, m.yo_gane, m.hubo_empate);
+        else if (m.estado === "terminada") mostrarResultado(m.carta_creador, m.carta_oponente, m.yo_gane, m.hubo_empate, false, m.oponente_username);
       } catch (e) {}
     })();
   </script>
