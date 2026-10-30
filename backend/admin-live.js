@@ -64,6 +64,13 @@ function crearAdminLive({ pool, rt }) {
           partidasPend.push({ username: claims.username, juego: fn.slice(6), apuesta: Number(body.p_apuesta) || 0,
                               ganancia: Number(resultado && resultado.ganancia) || 0, creado_en: new Date().toISOString() });
         }
+      } else if (fn.startsWith("blackjack_")) {
+        // Las manos de blackjack se anotan en el panel cuando terminan
+        if (hayAdmin() && resultado && resultado.terminada) {
+          marcarUsuario(claims.sub);
+          partidasPend.push({ username: claims.username, juego: "blackjack", apuesta: Number(resultado.apuesta) || 0,
+                              ganancia: Number(resultado.ganancia) || 0, creado_en: new Date().toISOString() });
+        }
       } else if (fn === "pvp_crear_mesa") {
         if (hayAdmin()) marcarUsuario(claims.sub);
       } else if (fn === "pvp_unirse_mesa" || fn === "pvp_cancelar_mesa") {
