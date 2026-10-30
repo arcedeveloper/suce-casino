@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Video Póker — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style>
+  .vp .manos { display: flex; justify-content: center; gap: 8px; padding: 4px 0 10px; perspective: 900px; }
+  .vp .slot { position: relative; cursor: pointer; flex: 0 1 auto; }
+  .vp .slot .carta { width: 66px; height: 96px; } .vp .slot .carta .palo { font-size: 1.9rem; } .vp .slot .carta .esq { font-size: .85rem; top: 5px; left: 6px; }
+  .vp .slot .carta .esq.inv { top: auto; left: auto; bottom: 5px; right: 6px; }
+  @media (min-width: 480px) { .vp .manos { gap: 12px; } .vp .slot .carta { width: 82px; height: 118px; } .vp .slot .carta .palo { font-size: 2.4rem; } .vp .slot .carta .esq { font-size: 1rem; } }
+  .vp .slot .guardo { position: absolute; left: 50%; bottom: -18px; transform: translateX(-50%); background: #fbbf24; color: #1a1205; font-size: .66rem; font-weight: 900; letter-spacing: 1px; padding: 2px 8px; border-radius: 999px; opacity: 0; transition: opacity .15s; }
+  .vp .slot.guardada .guardo { opacity: 1; } .vp .slot.guardada .carta .cara { box-shadow: 0 0 0 2px #fbbf24, 0 0 18px rgba(251,191,36,.7); }
+  .vp .jugada { text-align: center; min-height: 1.6em; margin-top: 16px; font-weight: 800; color: var(--gold-soft); letter-spacing: 1px; }
+  .vp .pagos { width: 100%; border-collapse: collapse; font-size: .82rem; margin-top: 8px; }
+  .vp .pagos td { padding: 4px 8px; color: rgba(255,255,255,.7); } .vp .pagos td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .vp .pagos tr.on td { color: #1a1205; background: #fbbf24; font-weight: 800; }
+  #fase-cambio { display: none; } #fase-cambio.on { display: block; } #fase-apuesta.off { display: none; }
+</style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="juego-wrap">
+      <a href="../index.html" class="volver">← Volver al lobby</a>
+      <div class="juego-top">
+        <div class="marca">🂡 Video Póker</div>
+        <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+      </div>
+      <section class="mesa vp">
+        <p class="mesa-titulo" id="titulo-mesa">Armá la mejor mano de 5 cartas</p>
+        <div class="manos" id="manos"></div>
+        <div class="jugada" id="jugada"></div>
+        <table class="pagos" id="pagos"><tr data-j="escalera_real"><td>Escalera real</td><td>×800</td></tr><tr data-j="escalera_color"><td>Escalera de color</td><td>×50</td></tr><tr data-j="poker"><td>Póker</td><td>×25</td></tr><tr data-j="full"><td>Full</td><td>×8</td></tr><tr data-j="color"><td>Color</td><td>×5</td></tr><tr data-j="escalera"><td>Escalera</td><td>×4</td></tr><tr data-j="trio"><td>Trío</td><td>×3</td></tr><tr data-j="doble_par"><td>Doble par</td><td>×2</td></tr><tr data-j="pareja"><td>Pareja de J o mejor</td><td>×1</td></tr></table>
+        <div class="resultado" id="resultado"></div>
+      </section>
+      <div id="fase-apuesta"><div id="rack"></div><button class="btn-jugar" id="btn-jugar">Repartir</button></div>
+      <div id="fase-cambio"><div class="bj-apuesta-viva" id="apuesta-viva" style="text-align:center;color:var(--text-dim);margin-bottom:8px"></div><button class="btn-jugar" id="btn-cambiar">Cambiar cartas</button></div>
+      <div id="mensaje" role="status" style="position:absolute;left:-9999px"></div>
+      <details class="reglas">
+        <summary>Cómo se juega</summary>
+        <p style="color:var(--text-dim);font-size:.86rem;margin:6px 0 10px;line-height:1.5">Apostás y recibís 5 cartas. Tocá las que querés <b>guardar</b> y presioná «Cambiar cartas»: las otras se reemplazan por cartas nuevas. Cobrás según la jugada final (tabla de la mesa, multiplicada por tu apuesta). Se necesita pareja de J o mejor para cobrar.</p>
+      </details>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+    const $ = (i) => document.getElementById(i);
+    let vivo = false, ocupado = false, apuestaMano = 0, retener = new Set(), cartas = [];
+    Mesa.iniciar({ juego: "poker", inicial: 2000 });
+    const manos = $("manos");
+    function marcarPago(j) { document.querySelectorAll("#pagos tr").forEach((t) => t.classList.toggle("on", t.dataset.j === j)); }
+    function fase(on) {
+      vivo = on; $("fase-cambio").classList.toggle("on", on); $("fase-apuesta").classList.toggle("off", on);
+      $("titulo-mesa").textContent = on ? "Tocá las cartas que querés guardar" : "Armá la mejor mano de 5 cartas";
+      $("apuesta-viva").innerHTML = on ? `Apuesta en juego: <b style="color:var(--gold-soft)">🪙 ${fmtFichas(apuestaMano)}</b>` : "";
+    }
+    async function mostrar(mano) {
+      cartas = mano; manos.innerHTML = ""; retener = new Set();
+      for (let i = 0; i < 5; i++) {
+        const [r, s] = mano[i];
+        manos.insertAdjacentHTML("beforeend", `<div class="slot" data-i="${i}">${cartaHTML(r, PALOS[s])}<span class="guardo">GUARDO</span></div>`);
+        const c = manos.lastElementChild.firstElementChild; void c.offsetWidth; await Efectos.esperar(50); c.classList.add("abierta"); Sonido.tocar("carta"); await Efectos.esperar(Efectos.reducido ? 0 : 160);
+      }
+    }
+    manos.addEventListener("click", (e) => {
+      const s = e.target.closest(".slot"); if (!s || !vivo || ocupado) return; const i = Number(s.dataset.i);
+      retener.has(i) ? retener.delete(i) : retener.add(i); s.classList.toggle("guardada", retener.has(i)); Sonido.tocar("click");
+    });
+    $("btn-jugar").onclick = (ev) => {
+      Mesa.ronda(ev.currentTarget, async (apuesta) => {
+        $("jugada").textContent = ""; marcarPago(null); manos.innerHTML = "";
+        const e = await llamarRPC("poker_repartir", { p_apuesta: apuesta });
+        apuestaMano = apuesta; Mesa.setSaldo(e.saldo_nuevo); fase(true); await mostrar(e.mano);
+      });
+    };
+    const NOM = { escalera_real: "¡ESCALERA REAL!", escalera_color: "Escalera de color", poker: "Póker", full: "Full", color: "Color", escalera: "Escalera", trio: "Trío", doble_par: "Doble par", pareja: "Pareja de J o mejor", nada: "Sin jugada" };
+    $("btn-cambiar").onclick = async () => {
+      if (ocupado || !vivo) return; ocupado = true; $("btn-cambiar").disabled = true;
+      try {
+        Sonido.tocar("click");
+        const e = await llamarRPC("poker_cambiar", { p_retener: [...retener].join(",") });
+        // dar vuelta solo las cartas nuevas
+        for (let i = 0; i < 5; i++) {
+          if (retener.has(i)) continue;
+          const slot = manos.children[i]; slot.classList.remove("guardada");
+          const [r, s] = e.mano[i]; slot.querySelector(".carta").outerHTML = cartaHTML(r, PALOS[s]);
+          const c = slot.querySelector(".carta"); void c.offsetWidth; await Efectos.esperar(60); c.classList.add("abierta"); Sonido.tocar("carta"); await Efectos.esperar(Efectos.reducido ? 0 : 260);
+        }
+        fase(false); marcarPago(e.jugada); $("jugada").textContent = NOM[e.jugada] || "";
+        if (Number(e.ganancia) > 0) manos.querySelectorAll(".carta").forEach((c) => c.classList.add("ganadora"));
+        await Efectos.esperar(400);
+        Mesa.resultado({ apuesta: Number(e.apuesta), ganancia: Number(e.ganancia), detalle: NOM[e.jugada] });
+        Mesa.setSaldo(e.saldo_nuevo);
+      } catch (err) { Mesa.ctrl.aviso(err.message || "No se pudo", true); }
+      finally { ocupado = false; $("btn-cambiar").disabled = false; }
+    };
+    (async () => { try { const e = await llamarRPC("poker_estado"); if (e.activa) { apuestaMano = Number(e.apuesta); Mesa.setSaldo(e.saldo_nuevo, false); fase(true); await mostrar(e.mano); } } catch (err) {} })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dados Más o Menos — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style>
+  .rg .barra { position: relative; height: 34px; border-radius: 17px; overflow: hidden; background: #7f1d1d; border: 1px solid rgba(255,255,255,.15); margin: 22px 6px 8px; }
+  .rg .zona { position: absolute; top: 0; bottom: 0; background: linear-gradient(#14b8a6,#0f766e); box-shadow: 0 0 20px rgba(45,212,191,.6) inset; transition: all .25s; }
+  .rg .marca-t { position: absolute; top: -6px; bottom: -6px; width: 4px; margin-left: -2px; background: #fff; border-radius: 2px; box-shadow: 0 0 14px #fff; left: 0; transition: left .9s cubic-bezier(.2,.9,.3,1); opacity: 0; }
+  .rg .marca-t.on { opacity: 1; }
+  .rg .escala { display: flex; justify-content: space-between; color: rgba(255,255,255,.5); font-size: .72rem; margin: 0 6px; }
+  .rg .grande-n { text-align: center; font-family: 'Playfair Display', serif; font-weight: 900; font-size: clamp(3rem, 14vw, 4.6rem); line-height: 1; color: #fff; text-shadow: 0 0 28px rgba(45,212,191,.7); min-height: 1.05em; font-variant-numeric: tabular-nums; }
+  .rg .grande-n.gana { color: #5eead4; } .rg .grande-n.pierde { color: #fb7185; text-shadow: 0 0 22px rgba(244,63,94,.6); }
+  .rg .stats { display: flex; justify-content: center; gap: 22px; text-align: center; margin: 8px 0 2px; }
+  .rg .stats small { display: block; color: var(--text-dim); font-size: .74rem; } .rg .stats b { font-size: 1.15rem; color: var(--gold-soft); font-variant-numeric: tabular-nums; }
+  .rg input[type=range] { width: calc(100% - 12px); margin: 12px 6px 0; accent-color: #2dd4bf; }
+</style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="juego-wrap">
+      <a href="../index.html" class="volver">← Volver al lobby</a>
+      <div class="juego-top">
+        <div class="marca">🎯 Dados Más o Menos</div>
+        <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+      </div>
+      <section class="mesa rg">
+        <p class="mesa-titulo">Tirada del 1 al 100</p>
+        <div class="grande-n" id="tirada">—</div>
+        <div class="barra" id="barra"><div class="zona" id="zona"></div><div class="marca-t" id="marca"></div></div>
+        <div class="escala"><span>1</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+        <div class="resultado" id="resultado"></div>
+      </section>
+      <div class="opciones" id="opciones">
+        <button type="button" class="opcion sel" data-v="menos">Sacar menos de…</button>
+        <button type="button" class="opcion" data-v="mas">Sacar más de…</button>
+      </div>
+      <input type="range" id="slider" min="5" max="96" value="50" aria-label="Número objetivo">
+      <div class="stats">
+        <div><small>Tu número</small><b id="s-obj">50</b></div><div><small>Chance de ganar</small><b id="s-chance">49%</b></div><div><small>Paga</small><b id="s-mult">×1,96</b></div>
+      </div>
+      <div id="rack"></div>
+      <button class="btn-jugar" id="btn-jugar">Tirar</button>
+      <div id="mensaje" role="status" style="position:absolute;left:-9999px"></div>
+      <details class="reglas">
+        <summary>Cómo se paga</summary>
+        <table class="tabla-premios"><tr><td>Chance de ganar</td><td>de 4% a 95%</td></tr><tr><td>Pago</td><td>96 ÷ chance</td></tr><tr><td>Ejemplo: 49% de chance</td><td>×1,96</td></tr></table><p style="color:var(--text-dim);font-size:.82rem;margin:0 0 10px">Movés el número y elegís «menos de» o «más de». Cuanto menos probable, más paga: con 10% de chance cobrás ×9,6 y con 80% cobrás ×1,2. La tirada es un número del 1 al 100.</p>
+      </details>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+    const $ = (i) => document.getElementById(i);
+    let modo = "menos";
+    const ops = $("opciones");
+    const nChance = () => { const o = Number($("slider").value); return modo === "menos" ? o - 1 : 100 - o; };
+    function refrescar() {
+      const o = Number($("slider").value), n = nChance(), mult = 96 / n;
+      $("s-obj").textContent = o; $("s-chance").textContent = n + "%"; $("s-mult").textContent = "×" + mult.toFixed(2).replace(".", ",");
+      const z = $("zona");
+      if (modo === "menos") { z.style.left = "0%"; z.style.width = (o - 1) + "%"; } else { z.style.left = o + "%"; z.style.width = (100 - o) + "%"; }
+    }
+    ops.addEventListener("click", (e) => { const b = e.target.closest("button.opcion"); if (!b) return; modo = b.dataset.v; ops.querySelectorAll("button").forEach((x) => x.classList.toggle("sel", x === b)); Sonido.tocar("click"); refrescar(); });
+    $("slider").addEventListener("input", refrescar); refrescar();
+    Mesa.iniciar({ juego: "rango", inicial: 1000 });
+    $("btn-jugar").onclick = (e) => {
+      Mesa.ronda(e.currentTarget, async (apuesta) => {
+        $("slider").disabled = true; ops.querySelectorAll("button").forEach((b) => (b.disabled = true));
+        const t = $("tirada"), m = $("marca"); t.className = "grande-n"; m.classList.remove("on");
+        try {
+          const prom = llamarRPC("jugar_rango", { p_apuesta: apuesta, p_modo: modo, p_objetivo: Number($("slider").value) });
+          Sonido.tocar("dado"); const iv = setInterval(() => { t.textContent = 1 + Math.floor(Math.random() * 100); Sonido.tocar("tick"); }, 70);
+          let data; try { [data] = await Promise.all([prom, Efectos.esperar(Efectos.reducido ? 0 : 1100)]); } finally { clearInterval(iv); }
+          const r = data.resultado; t.textContent = r.tirada;
+          m.style.transition = "none"; m.style.left = "0%"; void m.offsetWidth; m.style.transition = ""; m.classList.add("on"); m.style.left = r.tirada + "%";
+          await Efectos.esperar(Efectos.reducido ? 0 : 950);
+          t.className = "grande-n " + (data.ganancia > 0 ? "gana" : "pierde");
+          Mesa.resultado({ apuesta, ganancia: data.ganancia, detalle: `Salió ${r.tirada} (${modo === "menos" ? "menos de" : "más de"} ${r.objetivo})` });
+          Mesa.setSaldo(data.saldo_nuevo);
+        } finally { $("slider").disabled = false; ops.querySelectorAll("button").forEach((b) => (b.disabled = false)); }
+      });
+    };
+  </script>
+</body>
+</html>

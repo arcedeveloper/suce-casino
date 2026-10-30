@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sic Bo — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style>
+  .sb .tres { display: flex; justify-content: center; gap: 18px; padding: 10px 0 4px; }
+  .sb .suma-t { text-align: center; color: rgba(255,255,255,.8); min-height: 1.4em; font-weight: 700; }
+  .sb .nums { display: none; gap: 8px; justify-content: center; margin: 4px 0; } .sb .nums.on { display: flex; }
+  .sb .nums button { width: 46px; height: 46px; border-radius: 12px; font-size: 1.1rem; font-weight: 800; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.18); color: #fff; cursor: pointer; }
+  .sb .nums button.sel { border-color: var(--neon-suave); background: rgba(45,212,191,.2); box-shadow: 0 0 18px rgba(45,212,191,.4); }
+</style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="juego-wrap">
+      <a href="../index.html" class="volver">← Volver al lobby</a>
+      <div class="juego-top">
+        <div class="marca">🎲 Sic Bo</div>
+        <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+      </div>
+      <section class="mesa sb">
+        <p class="mesa-titulo">Tres dados, vos elegís cómo apostar</p>
+        <div class="tres"><div class="dado" id="d1"></div><div class="dado" id="d2"></div><div class="dado" id="d3"></div></div>
+        <div class="suma-t" id="suma"></div>
+        <div class="resultado" id="resultado"></div>
+      </section>
+      <div class="opciones" id="opciones">
+        <button type="button" class="opcion" data-v="chico">Chico<span class="sub-op">suma 4 a 10 · ×2</span></button>
+        <button type="button" class="opcion" data-v="grande">Grande<span class="sub-op">suma 11 a 17 · ×2</span></button>
+        <button type="button" class="opcion" data-v="numero">Un número<span class="sub-op">×2, ×3 o ×4</span></button>
+        <button type="button" class="opcion" data-v="triple">Triple<span class="sub-op">tres iguales · ×31</span></button>
+      </div>
+      <div class="nums" id="nums"><button type="button" data-n="1">1</button><button type="button" data-n="2">2</button><button type="button" data-n="3">3</button><button type="button" data-n="4">4</button><button type="button" data-n="5">5</button><button type="button" data-n="6">6</button></div>
+      <div id="rack"></div>
+      <button class="btn-jugar" id="btn-jugar">Tirar dados</button>
+      <div id="mensaje" role="status" style="position:absolute;left:-9999px"></div>
+      <details class="reglas">
+        <summary>Cómo se paga</summary>
+        <table class="tabla-premios"><tr><td>Chico o Grande</td><td>×2</td></tr><tr><td>Un número (sale 1 vez)</td><td>×2</td></tr><tr><td>Un número (sale 2 veces)</td><td>×3</td></tr><tr><td>Un número (sale 3 veces)</td><td>×4</td></tr><tr><td>Triple (cualquiera)</td><td>×31</td></tr><tr><td>Si salen tres iguales</td><td>Chico y Grande pierden</td></tr></table>
+      </details>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+    const $ = (i) => document.getElementById(i);
+    const D = [$("d1"), $("d2"), $("d3")], poner = (a) => a.forEach((n, i) => (D[i].innerHTML = dadoHTML(n)));
+    poner([2, 4, 6]);
+    let tipo = null, numero = null;
+    const op = crearOpciones($("opciones"), (v) => { tipo = v; $("nums").classList.toggle("on", v === "numero"); });
+    $("nums").addEventListener("click", (e) => { const b = e.target.closest("button[data-n]"); if (!b) return; numero = Number(b.dataset.n); $("nums").querySelectorAll("button").forEach((x) => x.classList.toggle("sel", x === b)); Sonido.tocar("click"); });
+    Mesa.iniciar({ juego: "sicbo", inicial: 2000 });
+    $("btn-jugar").onclick = (e) => {
+      if (!tipo) { Mesa.ctrl.aviso("Elegí cómo querés apostar"); return; }
+      if (tipo === "numero" && !numero) { Mesa.ctrl.aviso("Elegí el número del 1 al 6"); return; }
+      Mesa.ronda(e.currentTarget, async (apuesta) => {
+        op.bloquear(true); $("suma").textContent = "";
+        try {
+          const prom = llamarRPC("jugar_sicbo", { p_apuesta: apuesta, p_tipo: tipo, p_valor: tipo === "numero" ? numero : null });
+          D.forEach((d) => d.classList.add("rueda")); Sonido.tocar("dado");
+          const iv = setInterval(() => { poner([1, 2, 3].map(() => 1 + Math.floor(Math.random() * 6))); Sonido.tocar("tick"); }, 140);
+          let data; try { [data] = await Promise.all([prom, Efectos.esperar(Efectos.reducido ? 0 : 1300)]); } finally { clearInterval(iv); D.forEach((d) => d.classList.remove("rueda")); }
+          const r = data.resultado; poner(r.dados);
+          $("suma").textContent = `Suma ${r.suma}` + (r.triple ? " · ¡Triple!" : "");
+          await Efectos.esperar(350);
+          Mesa.resultado({ apuesta, ganancia: data.ganancia, detalle: r.triple && (tipo === "chico" || tipo === "grande") ? "Salió triple: gana la casa" : "" });
+          Mesa.setSaldo(data.saldo_nuevo);
+        } finally { op.bloquear(false); }
+      });
+    };
+  </script>
+</body>
+</html>

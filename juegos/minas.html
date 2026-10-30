@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Minas — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style>
+  .mn .grilla { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 360px; margin: 6px auto; }
+  .mn .cas { aspect-ratio: 1; border-radius: 12px; border: 1px solid rgba(94,234,212,.35); background: linear-gradient(160deg, #0f3d3a, #06201f); font-size: 1.7rem; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 0 rgba(255,255,255,.12), 0 4px 10px rgba(0,0,0,.4); transition: transform .15s, background .25s; padding: 0; }
+  .mn .cas:disabled { cursor: default; }
+  .mn .cas:not(:disabled):hover { transform: translateY(-2px); border-color: #5eead4; }
+  .mn .cas.gema { background: linear-gradient(160deg, #0d9488, #115e59); box-shadow: 0 0 18px rgba(45,212,191,.55); animation: mnGema .35s ease-out; }
+  .mn .cas.bomba { background: linear-gradient(160deg, #be123c, #4c0519); box-shadow: 0 0 20px rgba(244,63,94,.7); animation: mnBoom .4s ease-out; }
+  .mn .cas.otra { opacity: .45; }
+  @keyframes mnGema { from { transform: scale(.7) rotate(-10deg); } to { transform: none; } }
+  @keyframes mnBoom { 0% { transform: scale(.6); } 50% { transform: scale(1.18); } 100% { transform: none; } }
+  .mn .panel { display: flex; justify-content: center; gap: 22px; text-align: center; margin: 10px 0 0; }
+  .mn .panel small { display: block; color: rgba(255,255,255,.6); font-size: .74rem; } .mn .panel b { font-size: 1.1rem; color: var(--gold-soft); font-variant-numeric: tabular-nums; }
+  .mn-minas { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 6px 0; align-items: center; }
+  .mn-minas > span { color: var(--text-dim); font-size: .85rem; }
+  #fase-juego { display: none; } #fase-juego.on { display: block; }
+  #fase-apuesta.off { display: none; }
+  .btn-cobrar { width: 100%; margin-top: 10px; padding: 16px; border-radius: 16px; border: 0; font-weight: 800; font-size: 1.05rem; letter-spacing: 1px; cursor: pointer; color: #1a1205; background: linear-gradient(#fde68a, #f59e0b); box-shadow: 0 0 34px rgba(251,191,36,.45), inset 0 2px 0 rgba(255,255,255,.6); }
+  .btn-cobrar:disabled { opacity: .5; }
+</style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="juego-wrap">
+      <a href="../index.html" class="volver">← Volver al lobby</a>
+      <div class="juego-top">
+        <div class="marca">💣 Minas</div>
+        <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+      </div>
+      <section class="mesa mn">
+        <p class="mesa-titulo" id="titulo-mesa">Descubrí gemas y evitá las minas</p>
+        <div class="grilla" id="grilla"></div>
+        <div class="panel"><div><small>Ahora</small><b id="p-mult">×1,00</b></div><div><small>Siguiente</small><b id="p-sig">—</b></div><div><small>Podés cobrar</small><b id="p-cobro">—</b></div></div>
+        <div class="resultado" id="resultado"></div>
+      </section>
+      <div id="fase-apuesta">
+        <div class="mn-minas" id="sel-minas"><span>Minas en el tablero:</span>
+          <button type="button" class="opcion" data-m="1">1</button><button type="button" class="opcion sel" data-m="3">3</button><button type="button" class="opcion" data-m="5">5</button><button type="button" class="opcion" data-m="10">10</button><button type="button" class="opcion" data-m="20">20</button>
+        </div>
+        <div id="rack"></div>
+        <button class="btn-jugar" id="btn-jugar">Empezar</button>
+      </div>
+      <div id="fase-juego"><button class="btn-cobrar" id="btn-cobrar">Cobrar</button></div>
+      <div id="mensaje" role="status" style="position:absolute;left:-9999px"></div>
+      <details class="reglas">
+        <summary>Cómo se paga</summary>
+        <table class="tabla-premios"><tr><td>Cada gema descubierta</td><td>sube tu premio</td></tr><tr><td>Pisás una mina</td><td>Perdés la apuesta</td></tr><tr><td>Cobrás cuando quieras</td><td>después de 1 gema</td></tr></table><p style="color:var(--text-dim);font-size:.82rem;margin:0 0 10px">El tablero tiene 25 casilleros y escondés entre 1 y 20 minas. Cada casillero seguro que descubrís multiplica tu premio: con más minas el premio sube más rápido, pero es más fácil explotar. Podés cobrar en cualquier momento. Si descubrís todos los seguros, cobrás el máximo.</p>
+      </details>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+    const $ = (i) => document.getElementById(i);
+    const fx = (n) => "×" + Number(n).toFixed(2).replace(".", ",");
+    let minas = 3, vivo = false, ocupado = false, apuestaMano = 0;
+    $("grilla").innerHTML = Array.from({ length: 25 }, (_, i) => `<button type="button" class="cas" data-i="${i}" disabled aria-label="Casillero ${i + 1}"></button>`).join("");
+    const cas = [...document.querySelectorAll("#grilla .cas")];
+    $("sel-minas").addEventListener("click", (e) => { const b = e.target.closest("button[data-m]"); if (!b || vivo) return; minas = Number(b.dataset.m); $("sel-minas").querySelectorAll("button").forEach((x) => x.classList.toggle("sel", x === b)); Sonido.tocar("click"); });
+    Mesa.iniciar({ juego: "minas", inicial: 2000 });
+
+    function limpiar() { cas.forEach((c) => { c.className = "cas"; c.textContent = ""; c.disabled = true; }); }
+    function panel(e) {
+      $("p-mult").textContent = fx(e.mult); $("p-sig").textContent = e.siguiente ? fx(e.siguiente) : "—";
+      $("p-cobro").textContent = e.reveladas.length ? "🪙 " + fmtFichas(e.cobro) : "—";
+      $("btn-cobrar").textContent = e.reveladas.length ? `Cobrar 🪙 ${fmtFichas(e.cobro)}` : "Descubrí un casillero para poder cobrar";
+      $("btn-cobrar").disabled = !e.reveladas.length;
+    }
+    function fase(on) {
+      vivo = on; $("fase-juego").classList.toggle("on", on); $("fase-apuesta").classList.toggle("off", on);
+      $("titulo-mesa").textContent = on ? "Descubrí casilleros… o cobrá cuando quieras" : "Descubrí gemas y evitá las minas";
+    }
+    function pintar(e) {
+      e.reveladas.forEach((i) => { const c = cas[i]; if (!c.classList.contains("gema") && !(e.explotó === i)) { c.classList.add("gema"); c.textContent = "💎"; } });
+      cas.forEach((c, i) => { c.disabled = !vivo || e.terminada || e.reveladas.includes(i); });
+      panel(e);
+    }
+    async function terminar(e) {
+      fase(false);
+      if (e.bombas) e.bombas.forEach((b) => { const c = cas[b]; if (!c.classList.contains("gema")) { c.classList.add(b === e.explotó ? "bomba" : "otra"); c.textContent = "💣"; } });
+      if (e.explotó !== undefined) { cas[e.explotó].classList.remove("gema"); cas[e.explotó].classList.add("bomba"); cas[e.explotó].textContent = "💥"; }
+      cas.forEach((c) => (c.disabled = true)); panel(e);
+      await Efectos.esperar(Efectos.reducido ? 0 : 500);
+      Mesa.resultado({ apuesta: Number(e.apuesta), ganancia: Number(e.ganancia), detalle: e.explotó !== undefined ? "¡Pisaste una mina!" : `Cobraste con ${fx(e.mult)}` });
+      Mesa.setSaldo(e.saldo_nuevo);
+    }
+    async function revelar(i) {
+      if (ocupado || !vivo) return; ocupado = true; cas.forEach((c) => (c.disabled = true));
+      try {
+        const e = await llamarRPC("minas_revelar", { p_casilla: i });
+        if (e.terminada) { if (e.explotó === undefined) { cas[i].classList.add("gema"); cas[i].textContent = "💎"; Sonido.tocar("win"); } else Sonido.tocar("lose"); await terminar(e); }
+        else { Sonido.tocar("ficha"); pintar(e); }
+      } catch (err) { Mesa.ctrl.aviso(err.message || "No se pudo", true); cas.forEach((c, k) => (c.disabled = c.classList.contains("gema"))); }
+      finally { ocupado = false; }
+    }
+    $("grilla").addEventListener("click", (ev) => { const b = ev.target.closest(".cas"); if (b && !b.disabled) revelar(Number(b.dataset.i)); });
+    $("btn-cobrar").onclick = async () => {
+      if (ocupado || !vivo) return; ocupado = true; $("btn-cobrar").disabled = true;
+      try { Sonido.tocar("click"); await terminar(await llamarRPC("minas_cobrar")); } catch (err) { Mesa.ctrl.aviso(err.message || "No se pudo cobrar", true); } finally { ocupado = false; }
+    };
+    $("btn-jugar").onclick = (ev) => {
+      Mesa.ronda(ev.currentTarget, async (apuesta) => {
+        limpiar(); const e = await llamarRPC("minas_iniciar", { p_apuesta: apuesta, p_minas: minas });
+        apuestaMano = apuesta; Mesa.setSaldo(e.saldo_nuevo); fase(true); pintar(e);
+      });
+    };
+    (async () => { try { const e = await llamarRPC("minas_estado"); if (e.activa) { limpiar(); Mesa.setSaldo(e.saldo_nuevo, false); minas = e.minas; fase(true); pintar(e); } } catch (err) {} })();
+  </script>
+</body>
+</html>

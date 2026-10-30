@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dragon Tiger — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style>
+  .opciones .opcion { flex: 1 1 0; min-width: 0; padding-left: 6px; padding-right: 6px; }
+  .dt .duelo { display: flex; justify-content: center; align-items: center; gap: 18px; padding: 6px 0; perspective: 900px; }
+  .dt .bando { text-align: center; } .dt .bando small { display: block; margin-top: 12px; color: rgba(255,255,255,.75); font-weight: 700; letter-spacing: 1px; }
+  .dt .bando .ico { font-size: 2.4rem; display: block; margin-bottom: 8px; filter: drop-shadow(0 0 14px rgba(94,234,212,.5)); }
+  .dt .vs { font-family: 'Playfair Display', serif; color: rgba(255,255,255,.35); font-size: 1.3rem; }
+  .dt .bando.gana .ico { filter: drop-shadow(0 0 18px #fbbf24); }
+</style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="juego-wrap">
+      <a href="../index.html" class="volver">← Volver al lobby</a>
+      <div class="juego-top">
+        <div class="marca">🐉 Dragon Tiger</div>
+        <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+      </div>
+      <section class="mesa dt">
+        <p class="mesa-titulo">Una carta cada uno: gana la más alta</p>
+        <div class="duelo">
+          <div class="bando" id="b-dragon"><span class="ico">🐉</span><div id="c-dragon"></div><small>DRAGÓN</small></div>
+          <div class="vs">VS</div>
+          <div class="bando" id="b-tigre"><span class="ico">🐯</span><div id="c-tigre"></div><small>TIGRE</small></div>
+        </div>
+        <div class="resultado" id="resultado"></div>
+      </section>
+      <div class="opciones" id="opciones">
+        <button type="button" class="opcion" data-v="dragon">Dragón<span class="sub-op">paga ×2</span></button>
+        <button type="button" class="opcion" data-v="empate">Empate<span class="sub-op">paga ×11</span></button>
+        <button type="button" class="opcion" data-v="tigre">Tigre<span class="sub-op">paga ×2</span></button>
+      </div>
+      <div id="rack"></div>
+      <button class="btn-jugar" id="btn-jugar">Repartir</button>
+      <div id="mensaje" role="status" style="position:absolute;left:-9999px"></div>
+      <details class="reglas">
+        <summary>Cómo se paga</summary>
+        <table class="tabla-premios"><tr><td>Acertás Dragón o Tigre</td><td>×2</td></tr><tr><td>Acertás Empate</td><td>×11</td></tr><tr><td>Empate si apostaste a Dragón o Tigre</td><td>Perdés solo la mitad</td></tr></table><p style="color:var(--text-dim);font-size:.82rem;margin:0 0 10px">El orden va del As (la más baja) al K (la más alta).</p>
+      </details>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+    const $ = (i) => document.getElementById(i);
+    const op = crearOpciones($("opciones"));
+    Mesa.iniciar({ juego: "dragon_tigre", inicial: 2000 });
+    const dorso = () => { $("c-dragon").innerHTML = cartaHTML(0); $("c-tigre").innerHTML = cartaHTML(0); }; dorso();
+    const abrir = (el, n) => { el.innerHTML = cartaHTML(n); void el.offsetWidth; el.firstElementChild.classList.add("abierta"); Sonido.tocar("carta"); };
+    $("btn-jugar").onclick = (e) => {
+      if (!op.valor) { Mesa.ctrl.aviso("Elegí Dragón, Tigre o Empate"); return; }
+      Mesa.ronda(e.currentTarget, async (apuesta) => {
+        op.bloquear(true);
+        try {
+          dorso(); $("b-dragon").classList.remove("gana"); $("b-tigre").classList.remove("gana");
+          const data = await llamarRPC("jugar_dragon_tigre", { p_apuesta: apuesta, p_eleccion: op.valor });
+          const r = data.resultado;
+          await Efectos.esperar(300); abrir($("c-dragon"), r.dragon); await Efectos.esperar(Efectos.reducido ? 0 : 700); abrir($("c-tigre"), r.tigre);
+          await Efectos.esperar(Efectos.reducido ? 0 : 900);
+          if (r.gana !== "empate") { $("b-" + r.gana).classList.add("gana"); $("c-" + r.gana).firstElementChild.classList.add("ganadora"); }
+          Mesa.resultado({ apuesta, ganancia: data.ganancia, detalle: r.gana === "empate" ? "Empate" : "Ganó el " + (r.gana === "dragon" ? "Dragón" : "Tigre") });
+          Mesa.setSaldo(data.saldo_nuevo);
+        } finally { op.bloquear(false); }
+      });
+    };
+  </script>
+</body>
+</html>

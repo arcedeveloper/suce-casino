@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Baccarat — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style>
+  .opciones .opcion { flex: 1 1 0; min-width: 0; padding-left: 6px; padding-right: 6px; }
+  .bac .lados { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; text-align: center; }
+  .bac .rotulo { display: inline-flex; align-items: center; gap: 8px; font-size: .78rem; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,.6); margin-bottom: 10px; }
+  .bac .puntos { min-width: 30px; padding: 2px 10px; border-radius: 999px; background: rgba(0,0,0,.45); border: 1px solid rgba(94,234,212,.4); color: #fff; font-weight: 800; }
+  .bac .lado.gana .puntos { border-color: #fbbf24; box-shadow: 0 0 14px rgba(251,191,36,.6); }
+  .bac .mano { display: flex; justify-content: center; min-height: 116px; perspective: 900px; }
+  .bac .slot + .slot { margin-left: -38px; }
+  .bac .slot { animation: bacIn .35s ease-out both; }
+  .bac .carta { width: 76px; height: 108px; } .bac .carta .palo { font-size: 2.1rem; } .bac .carta .esq { font-size: .9rem; top: 5px; left: 7px; }
+  .bac .carta .esq.inv { top: auto; left: auto; bottom: 5px; right: 7px; }
+  @keyframes bacIn { from { opacity: 0; transform: translate(30px,-24px) rotate(8deg); } to { opacity: 1; transform: none; } }
+  @media (max-width: 440px) { .bac .carta { width: 62px; height: 90px; } .bac .mano { min-height: 96px; } .bac .slot + .slot { margin-left: -30px; } }
+</style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="juego-wrap">
+      <a href="../index.html" class="volver">← Volver al lobby</a>
+      <div class="juego-top">
+        <div class="marca">🎴 Baccarat</div>
+        <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+      </div>
+      <section class="mesa bac">
+        <p class="mesa-titulo">Gana la mano que se acerque más a 9</p>
+        <div class="lados">
+          <div class="lado" id="lado-jugador"><div class="rotulo">Jugador <span class="puntos" id="pt-jugador">—</span></div><div class="mano" id="mano-jugador"></div></div>
+          <div class="lado" id="lado-banca"><div class="rotulo">Banca <span class="puntos" id="pt-banca">—</span></div><div class="mano" id="mano-banca"></div></div>
+        </div>
+        <div class="resultado" id="resultado"></div>
+      </section>
+      <div class="opciones" id="opciones">
+        <button type="button" class="opcion" data-v="jugador">Jugador<span class="sub-op">paga ×2</span></button>
+        <button type="button" class="opcion" data-v="empate">Empate<span class="sub-op">paga ×9</span></button>
+        <button type="button" class="opcion" data-v="banca">Banca<span class="sub-op">paga ×1,95</span></button>
+      </div>
+      <div id="rack"></div>
+      <button class="btn-jugar" id="btn-jugar">Repartir</button>
+      <div id="mensaje" role="status" style="position:absolute;left:-9999px"></div>
+      <details class="reglas">
+        <summary>Cómo se paga</summary>
+        <table class="tabla-premios"><tr><td>Acertás Jugador</td><td>×2</td></tr><tr><td>Acertás Banca</td><td>×1,95</td></tr><tr><td>Acertás Empate</td><td>×9</td></tr><tr><td>Empate si apostaste a Jugador o Banca</td><td>Apuesta devuelta</td></tr></table><p style="color:var(--text-dim);font-size:.82rem;margin:0 0 10px">Cada carta vale su número; el As vale 1 y las figuras y el 10 valen 0. Se suman los puntos y cuenta solo la última cifra (7 + 8 = 15 → 5). Con 8 o 9 en las dos primeras cartas «natural» la mano termina. Después se reparte una tercera carta según las reglas clásicas del Baccarat, de forma automática.</p>
+      </details>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+    const $ = (i) => document.getElementById(i);
+    const op = crearOpciones($("opciones"));
+    Mesa.iniciar({ juego: "baccarat", inicial: 2000 });
+    async function poner(lado, rangos) {
+      const host = $("mano-" + lado);
+      for (let i = host.children.length; i < rangos.length; i++) {
+        host.insertAdjacentHTML("beforeend", `<div class="slot">${cartaHTML(rangos[i])}</div>`);
+        const c = host.lastElementChild.firstElementChild; void c.offsetWidth; await Efectos.esperar(60);
+        c.classList.add("abierta"); Sonido.tocar("carta"); await Efectos.esperar(Efectos.reducido ? 0 : 420);
+      }
+    }
+    const valor = (r) => (r >= 10 ? 0 : r);
+    const parcial = (a) => a.reduce((s, r) => s + valor(r), 0) % 10;
+    $("btn-jugar").onclick = (e) => {
+      if (!op.valor) { Mesa.ctrl.aviso("Elegí Jugador, Banca o Empate"); return; }
+      Mesa.ronda(e.currentTarget, async (apuesta) => {
+        op.bloquear(true);
+        try {
+          $("mano-jugador").innerHTML = $("mano-banca").innerHTML = ""; $("pt-jugador").textContent = $("pt-banca").textContent = "—";
+          document.querySelectorAll(".bac .lado").forEach((l) => l.classList.remove("gana"));
+          const data = await llamarRPC("jugar_baccarat", { p_apuesta: apuesta, p_eleccion: op.valor });
+          const r = data.resultado, J = r.jugador, B = r.banca;
+          await poner("jugador", J.slice(0, 1)); await poner("banca", B.slice(0, 1));
+          await poner("jugador", J.slice(0, 2)); await poner("banca", B.slice(0, 2));
+          $("pt-jugador").textContent = parcial(J.slice(0, 2)); $("pt-banca").textContent = parcial(B.slice(0, 2));
+          if (J.length > 2) { await poner("jugador", J); $("pt-jugador").textContent = parcial(J); }
+          if (B.length > 2) { await poner("banca", B); $("pt-banca").textContent = parcial(B); }
+          $("pt-jugador").textContent = r.pt_jugador; $("pt-banca").textContent = r.pt_banca;
+          if (r.gana !== "empate") $("lado-" + r.gana).classList.add("gana");
+          await Efectos.esperar(Efectos.reducido ? 0 : 500);
+          const txt = r.gana === "empate" ? "Empate" : r.gana === "jugador" ? "Gana el Jugador" : "Gana la Banca";
+          Mesa.resultado({ apuesta, ganancia: data.ganancia, detalle: `${txt} (${r.pt_jugador} a ${r.pt_banca})` });
+          Mesa.setSaldo(data.saldo_nuevo);
+        } finally { op.bloquear(false); }
+      });
+    };
+  </script>
+</body>
+</html>

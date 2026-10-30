@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Penales — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style>
+  .pn .arco { position: relative; height: 190px; max-width: 420px; margin: 0 auto; border: 4px solid #f1f5f9; border-bottom: 0; border-radius: 8px 8px 0 0; background: repeating-linear-gradient(90deg, rgba(255,255,255,.08) 0 2px, transparent 2px 16px), repeating-linear-gradient(0deg, rgba(255,255,255,.08) 0 2px, transparent 2px 16px), rgba(0,0,0,.35); box-shadow: 0 0 30px rgba(45,212,191,.25); }
+  .pn .cesped { height: 70px; max-width: 420px; margin: 0 auto; background: linear-gradient(#14532d, #052e16); border-radius: 0 0 14px 14px; position: relative; }
+  .pn .arquero { position: absolute; bottom: 4px; left: 50%; font-size: 3rem; transform: translateX(-50%); transition: left .45s cubic-bezier(.2,.8,.3,1), transform .45s; }
+  .pn .pelota { position: absolute; left: 50%; bottom: -52px; font-size: 2rem; transform: translateX(-50%); transition: left .5s cubic-bezier(.3,.8,.3,1), bottom .5s cubic-bezier(.3,.8,.3,1), transform .5s; z-index: 2; }
+  .pn .gol-txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-weight: 900; font-size: 2.6rem; opacity: 0; transition: opacity .3s; text-shadow: 0 0 24px currentColor; pointer-events: none; }
+  .pn .gol-txt.on { opacity: 1; }
+</style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="juego-wrap">
+      <a href="../index.html" class="volver">← Volver al lobby</a>
+      <div class="juego-top">
+        <div class="marca">⚽ Penales</div>
+        <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+      </div>
+      <section class="mesa pn">
+        <p class="mesa-titulo">Elegí hacia dónde patear</p>
+        <div class="arco" id="arco"><div class="arquero" id="arq">🧤</div><div class="gol-txt" id="gol"></div></div>
+        <div class="cesped"><div class="pelota" id="pelota">⚽</div></div>
+        <div class="resultado" id="resultado"></div>
+      </section>
+      <div class="opciones" id="opciones">
+        <button type="button" class="opcion" data-v="izq">Izquierda</button>
+        <button type="button" class="opcion" data-v="centro">Al medio</button>
+        <button type="button" class="opcion" data-v="der">Derecha</button>
+      </div>
+      <div id="rack"></div>
+      <button class="btn-jugar" id="btn-jugar">¡Patear!</button>
+      <div id="mensaje" role="status" style="position:absolute;left:-9999px"></div>
+      <details class="reglas">
+        <summary>Cómo se paga</summary>
+        <table class="tabla-premios"><tr><td>Hacés el gol</td><td>×1,42</td></tr><tr><td>Ataja el arquero</td><td>Perdés la apuesta</td></tr></table><p style="color:var(--text-dim);font-size:.82rem;margin:0 0 10px">Elegís un lado y el arquero se tira a uno de los tres lugares al azar. Si no adivina tu lado, es gol.</p>
+      </details>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+    const $ = (i) => document.getElementById(i);
+    const op = crearOpciones($("opciones"));
+    const X = { izq: "18%", centro: "50%", der: "82%" };
+    Mesa.iniciar({ juego: "penales", inicial: 2000 });
+    function reset() { $("arq").style.left = "50%"; $("pelota").style.left = "50%"; $("pelota").style.bottom = "-52px"; $("pelota").style.transform = "translateX(-50%)"; $("gol").classList.remove("on"); }
+    $("btn-jugar").onclick = (e) => {
+      if (!op.valor) { Mesa.ctrl.aviso("Elegí hacia dónde patear"); return; }
+      Mesa.ronda(e.currentTarget, async (apuesta) => {
+        op.bloquear(true); reset();
+        try {
+          const data = await llamarRPC("jugar_penales", { p_apuesta: apuesta, p_lado: op.valor });
+          const r = data.resultado, gol = data.ganancia > 0;
+          Sonido.tocar("click"); await Efectos.esperar(Efectos.reducido ? 0 : 500);
+          $("arq").style.left = X[r.arquero]; $("pelota").style.left = X[r.lado]; $("pelota").style.bottom = "120px"; $("pelota").style.transform = "translateX(-50%) scale(.7) rotate(360deg)"; Sonido.tocar("rebote");
+          await Efectos.esperar(Efectos.reducido ? 0 : 700);
+          const g = $("gol"); g.textContent = gol ? "¡GOOOL!" : "¡ATAJÓ!"; g.style.color = gol ? "#5eead4" : "#fb7185"; g.classList.add("on");
+          Mesa.resultado({ apuesta, ganancia: data.ganancia, detalle: gol ? "Gol" : "El arquero adivinó" });
+          Mesa.setSaldo(data.saldo_nuevo);
+        } finally { op.bloquear(false); }
+      });
+    };
+  </script>
+</body>
+</html>

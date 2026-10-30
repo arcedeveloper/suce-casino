@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Crash — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style>
+  .cr .pantalla { position: relative; height: 230px; border-radius: 16px; background: radial-gradient(120% 90% at 50% 100%, rgba(45,212,191,.16), rgba(0,0,0,.55)); border: 1px solid rgba(94,234,212,.25); overflow: hidden; }
+  .cr svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .cr .num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-weight: 900; font-size: clamp(2.8rem, 12vw, 4.4rem); color: #fff; text-shadow: 0 0 30px rgba(45,212,191,.8); font-variant-numeric: tabular-nums; pointer-events: none; }
+  .cr .num small { font-family: inherit; font-size: .9rem; font-weight: 600; letter-spacing: 2px; color: rgba(255,255,255,.65); text-shadow: none; }
+  .cr .num.cobro { color: #5eead4; } .cr .num.boom { color: #fb7185; text-shadow: 0 0 30px rgba(244,63,94,.8); }
+  .cr .cohete { position: absolute; font-size: 1.7rem; transform: translate(-50%,-50%) rotate(45deg); left: 4%; bottom: 4%; transition: none; filter: drop-shadow(0 0 10px rgba(251,191,36,.8)); }
+  .cr .objetivo { display: flex; align-items: center; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 6px 0 2px; }
+  .cr .objetivo input { width: 96px !important; flex: none; text-align: center; font-size: 1.1rem; font-weight: 800; padding: 10px; border-radius: 12px; background: rgba(0,0,0,.4); border: 1px solid rgba(94,234,212,.4); color: #fff; }
+  .cr .info { text-align: center; color: var(--text-dim); font-size: .85rem; min-height: 1.2em; margin-bottom: 4px; }
+  .cr .info b { color: var(--gold-soft); }
+</style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="juego-wrap">
+      <a href="../index.html" class="volver">← Volver al lobby</a>
+      <div class="juego-top">
+        <div class="marca">🚀 Crash</div>
+        <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+      </div>
+      <section class="mesa cr">
+        <p class="mesa-titulo">Elegí hasta dónde querés llegar</p>
+        <div class="pantalla" id="pantalla">
+          <svg id="svg" viewBox="0 0 400 230" preserveAspectRatio="none"><polyline id="curva" fill="none" stroke="#5eead4" stroke-width="3" stroke-linecap="round" points="" style="filter:drop-shadow(0 0 6px #2dd4bf)"/></svg>
+          <div class="cohete" id="cohete">🚀</div>
+          <div class="num" id="num">1,00x<small id="sub">Listo para despegar</small></div>
+        </div>
+        <div class="resultado" id="resultado"></div>
+      </section>
+      <div class="objetivo" id="chips-obj">
+        <button type="button" class="opcion" data-x="1.5">1,5x</button><button type="button" class="opcion sel" data-x="2">2x</button>
+        <button type="button" class="opcion" data-x="3">3x</button><button type="button" class="opcion" data-x="5">5x</button><button type="button" class="opcion" data-x="10">10x</button>
+        <input id="obj" type="number" inputmode="decimal" min="1.1" max="100" step="0.1" value="2" aria-label="Objetivo">
+      </div>
+      <div class="info" id="info"></div>
+      <div id="rack"></div>
+      <button class="btn-jugar" id="btn-jugar">Despegar</button>
+      <div id="mensaje" role="status" style="position:absolute;left:-9999px"></div>
+      <details class="reglas">
+        <summary>Cómo se paga</summary>
+        <table class="tabla-premios"><tr><td>Llegás a tu objetivo</td><td>Cobrás apuesta × objetivo</td></tr><tr><td>El cohete se estrella antes</td><td>Perdés la apuesta</td></tr><tr><td>Objetivo permitido</td><td>de ×1,10 a ×100</td></tr></table><p style="color:var(--text-dim);font-size:.82rem;margin:0 0 10px">Elegís un objetivo (por ejemplo ×2) y despegás. El cohete sube y se estrella en un punto al azar. Si llega a tu objetivo, cobrás automáticamente; si se estrella antes, perdés. Cuanto más alto el objetivo, más difícil llegar: ×2 se logra cerca de la mitad de las veces, ×10 una de cada diez.</p>
+      </details>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+    const $ = (i) => document.getElementById(i);
+    const fx = (n) => Number(n).toFixed(2).replace(".", ",") + "x";
+    const inp = $("obj");
+    function info() {
+      const x = Number(inp.value) || 0, ap = Mesa.ctrl ? Mesa.ctrl.valor : 0;
+      $("info").innerHTML = x >= 1.1 && x <= 100 ? `Probabilidad aprox.: <b>${(97 / x).toFixed(1).replace(".", ",")}%</b> · Si llegás cobrás <b>🪙 ${fmtFichas(Math.floor(ap * Math.round(x * 100) / 100))}</b>` : "Elegí un objetivo entre 1,10 y 100";
+    }
+    $("chips-obj").addEventListener("click", (e) => { const b = e.target.closest("button[data-x]"); if (!b) return; inp.value = b.dataset.x; Sonido.tocar("click"); marcar(); info(); });
+    function marcar() { document.querySelectorAll("#chips-obj button").forEach((b) => b.classList.toggle("sel", Number(b.dataset.x) === Number(inp.value))); }
+    inp.addEventListener("input", () => { marcar(); info(); });
+    Mesa.iniciar({ juego: "crash", inicial: 1000, onApuesta: info }).then(info);
+
+    const num = $("num"), sub = $("sub"), curva = $("curva"), cohete = $("cohete");
+    function ver(m, mensaje, cls) {
+      num.className = "num" + (cls ? " " + cls : ""); num.firstChild.nodeValue = fx(m); sub.textContent = mensaje || "";
+    }
+    // curva: x lineal en el tiempo, y en escala logarítmica
+    function trazo(m, M, p) {
+      const pts = []; const n = Math.max(2, Math.round(p * 60));
+      for (let i = 0; i <= n; i++) { const q = (i / n) * p; const mm = Math.pow(Math.max(M, 1.0001), q); pts.push(`${(q * 360 + 10).toFixed(1)},${(215 - (Math.log(mm) / Math.log(Math.max(M, 1.5))) * 190).toFixed(1)}`); }
+      curva.setAttribute("points", pts.join(" "));
+      const [x, y] = pts[pts.length - 1].split(",").map(Number); cohete.style.left = (x / 400 * 100) + "%"; cohete.style.top = (y / 230 * 100) + "%"; cohete.style.bottom = "auto";
+    }
+    $("btn-jugar").onclick = (e) => {
+      const obj = Math.round(Number(inp.value) * 100) / 100;
+      if (!(obj >= 1.1 && obj <= 100)) { Mesa.ctrl.aviso("Elegí un objetivo entre 1,10 y 100"); return; }
+      Mesa.ronda(e.currentTarget, async (apuesta) => {
+        inp.disabled = true; curva.setAttribute("points", ""); ver(1, "Despegando…"); cohete.style.left = "4%"; cohete.style.top = "92%";
+        try {
+          const data = await llamarRPC("jugar_crash", { p_apuesta: apuesta, p_objetivo: obj });
+          const crash = Number(data.resultado.crash), llega = crash >= obj, M = llega ? obj : crash;
+          const dur = Efectos.reducido ? 0 : Math.min(6500, 1400 + Math.log(Math.max(M, 1.01)) * 1900);
+          const t0 = performance.now(); let ult = 0;
+          await new Promise((ok) => {
+            const f = (t) => {
+              const p = dur ? Math.min(1, (t - t0) / dur) : 1, m = Math.pow(Math.max(M, 1.0001), p);
+              ver(m, llega ? "Objetivo " + fx(obj) : "Subiendo…"); trazo(m, M, p);
+              if (t - ult > 140) { Sonido.tocar("tick"); ult = t; }
+              p < 1 ? requestAnimationFrame(f) : ok();
+            }; requestAnimationFrame(f);
+          });
+          if (llega) { ver(obj, "¡Cobrado!", "cobro"); } else { ver(crash, "💥 Se estrelló", "boom"); cohete.textContent = "💥"; }
+          await Efectos.esperar(500);
+          Mesa.resultado({ apuesta, ganancia: data.ganancia, detalle: llega ? `Llegaste a ${fx(obj)}` : `Se estrelló en ${fx(crash)}` });
+          Mesa.setSaldo(data.saldo_nuevo);
+        } finally { inp.disabled = false; setTimeout(() => (cohete.textContent = "🚀"), 1500); }
+      });
+    };
+  </script>
+</body>
+</html>
