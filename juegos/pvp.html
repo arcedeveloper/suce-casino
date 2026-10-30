@@ -94,6 +94,14 @@
       dados_dobles:  { nombre: "Dados Dobles",    emoji: "🎲", desc: "Cada uno tira 2 dados (suma 2-12). La suma más alta gana.", formatear: n => n },
       numero_suerte: { nombre: "Número de la Suerte", emoji: "🔢", desc: "Cada uno saca un número del 1 al 100. El más alto gana.", formatear: n => n },
       ruleta_pvp:    { nombre: "Ruleta en Vivo",  emoji: "🎡", desc: "Cada uno gira la ruleta (0-36). El número más alto gana.", formatear: n => n },
+      tres_dados: { nombre: "Tres Dados", emoji: "🎲", desc: "Cada uno tira 3 dados (suma 3-18). La suma más alta gana.", formatear: n => n },
+      dado_20: { nombre: "Dado de 20", emoji: "🎯", desc: "Cada uno tira un dado de 20 caras. El número más alto gana.", formatear: n => n },
+      duelo_21: { nombre: "Duelo 21", emoji: "🃏", desc: "Cada uno recibe cartas hasta llegar a 17 o más. Gana el que más se acerque a 21 sin pasarse.", formatear: n => n > 0 ? n : 'Se pasó' },
+      generala: { nombre: "Generala", emoji: "🎲", desc: "Cada uno tira 5 dados. Gana la mejor jugada: generala, póker, full, escalera, trío, doble par o pareja.", formatear: n => ({8:'Generala',7:'Póker',6:'Full',5:'Escalera',4:'Trío',3:'Doble par',2:'Pareja',1:'Nada'}[Math.floor(n/1000)]) },
+      baccarat_duelo: { nombre: "Duelo Baccarat", emoji: "🎴", desc: "Cada uno saca 2 cartas y cuenta la última cifra de la suma (0-9). Gana el más cercano a 9.", formatear: n => n },
+      doble_ruleta: { nombre: "Doble Ruleta", emoji: "🎡", desc: "Cada uno gira la ruleta dos veces y se suman los números (0-72). La suma más alta gana.", formatear: n => n },
+      tres_cartas: { nombre: "Tres Cartas", emoji: "♠️", desc: "Cada uno saca 3 cartas y vale la más alta (el As es la más alta de todas).", formatear: n => ({11:'J',12:'Q',13:'K',14:'A'}[n] || n) },
+      numero_mil: { nombre: "Número Mil", emoji: "🔢", desc: "Cada uno saca un número del 1 al 1.000. El más alto gana.", formatear: n => n },
     };
 
     const params = new URLSearchParams(window.location.search);
