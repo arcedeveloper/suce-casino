@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Blackjack — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style>
+  .bj .zona { text-align: center; padding: 4px 0 6px; }
+  .bj .zona + .zona { border-top: 1px dashed rgba(94,234,212,.22); margin-top: 8px; padding-top: 14px; }
+  .bj .rotulo { display: inline-flex; align-items: center; gap: 8px; font-size: .78rem; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,.6); margin-bottom: 10px; }
+  .bj .puntos { min-width: 30px; padding: 2px 10px; border-radius: 999px; background: rgba(0,0,0,.45); border: 1px solid rgba(94,234,212,.4); color: #fff; font-weight: 800; font-size: .9rem; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+  .bj .puntos.pasado { border-color: #f43f5e; color: #fda4af; }
+  .bj .puntos.veintiuno { border-color: #fbbf24; color: #fde68a; box-shadow: 0 0 14px rgba(251,191,36,.5); }
+  .bj .mano { display: flex; justify-content: center; min-height: 124px; padding: 0 10px; perspective: 900px; }
+  .bj .slot { flex: none; animation: bjEntra .35s ease-out both; }
+  .bj .slot + .slot { margin-left: -34px; }
+  .bj .carta { width: 84px; height: 120px; }
+  .bj .carta .palo { font-size: 2.4rem; }
+  .bj .carta .esq { font-size: 1rem; }
+  @keyframes bjEntra { from { opacity: 0; transform: translate(40px,-30px) rotate(8deg); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .bj .slot { animation: none; } }
+  @media (max-width: 480px) {
+    .bj .carta { width: 66px; height: 96px; } .bj .mano { min-height: 100px; }
+    .bj .slot + .slot { margin-left: -26px; } .bj .carta .palo { font-size: 1.9rem; } .bj .carta .esq { font-size: .85rem; top: 5px; left: 6px; }
+    .bj .carta .esq.inv { bottom: 5px; right: 6px; top: auto; left: auto; }
+  }
+  .bj-acciones { display: none; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 8px 0 4px; }
+  .bj-acciones.on { display: flex; }
+  .bj-acciones button.opcion { flex: 1 1 120px; max-width: 200px; }
+  .bj-apuesta-viva { text-align: center; color: var(--text-dim); font-size: .86rem; margin: 2px 0 6px; min-height: 1.2em; }
+  .bj-apuesta-viva b { color: var(--gold-soft); }
+  #bloque-apuesta.off { display: none; }
+</style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="juego-wrap bj">
+      <a href="../index.html" class="volver">← Volver al lobby</a>
+      <div class="juego-top">
+        <div class="marca">🃏 Blackjack</div>
+        <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+      </div>
+
+      <section class="mesa">
+        <p class="mesa-titulo" id="titulo-mesa">Llegá a 21 sin pasarte</p>
+        <div class="zona">
+          <div class="rotulo">Casa <span class="puntos" id="pt-casa">—</span></div>
+          <div class="mano" id="mano-casa"></div>
+        </div>
+        <div class="zona">
+          <div class="rotulo">Vos <span class="puntos" id="pt-jugador">—</span></div>
+          <div class="mano" id="mano-jugador"></div>
+        </div>
+        <div class="resultado" id="resultado"></div>
+      </section>
+
+      <div class="bj-apuesta-viva" id="apuesta-viva"></div>
+      <div class="bj-acciones" id="acciones">
+        <button type="button" class="opcion" id="b-pedir">Pedir carta<span class="sub-op">una más</span></button>
+        <button type="button" class="opcion" id="b-plantar">Plantarme<span class="sub-op">me quedo así</span></button>
+        <button type="button" class="opcion" id="b-doblar">Doblar<span class="sub-op">doble apuesta, 1 carta</span></button>
+      </div>
+
+      <div id="bloque-apuesta">
+        <div id="rack"></div>
+        <button class="btn-jugar" id="btn-jugar">Repartir</button>
+      </div>
+      <div id="mensaje" role="status" style="position:absolute;left:-9999px"></div>
+
+      <details class="reglas">
+        <summary>Cómo se juega y cómo se paga</summary>
+        <table class="tabla-premios">
+          <tr><td>Blackjack (A + figura o 10)</td><td>×2,5</td></tr>
+          <tr><td>Ganás a la casa</td><td>×2</td></tr>
+          <tr><td>Empate</td><td>Apuesta devuelta</td></tr>
+          <tr><td>Te pasás de 21</td><td>Pierde</td></tr>
+        </table>
+        <p style="color:var(--text-dim);font-size:.82rem;margin:0 0 10px">Las figuras valen 10 y el As vale 11 o 1. La casa se planta en 17. Podés doblar con tus dos primeras cartas: la apuesta se duplica y recibís una sola carta más. El mazo se baraja en cada mano.</p>
+      </details>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+    const $ = (id) => document.getElementById(id);
+    const manos = { casa: $("mano-casa"), jugador: $("mano-jugador") };
+    const llevo = { casa: 0, jugador: 0 };      // cartas ya dibujadas por lado
+    let enCurso = false, ocupado = false, apuestaMano = 0;
+
+    function limpiar() {
+      manos.casa.innerHTML = ""; manos.jugador.innerHTML = ""; llevo.casa = llevo.jugador = 0;
+      puntos("casa", "—"); puntos("jugador", "—");
+    }
+    function puntos(lado, v, estado) {
+      const el = $("pt-" + lado); el.textContent = v; el.className = "puntos" + (estado ? " " + estado : "");
+    }
+    function estadoPuntos(n) { return n > 21 ? "pasado" : n === 21 ? "veintiuno" : ""; }
+
+    // Dibuja las cartas nuevas de un lado (con pausa entre carta y carta)
+    async function repartirLado(lado, cartas, tapada) {
+      const host = manos[lado];
+      // si había una carta tapada y ahora llega la real, la damos vuelta
+      const tap = host.querySelector(".slot[data-tapada]");
+      if (tap && cartas.length >= 2) {
+        const [r, s] = cartas[1];
+        tap.removeAttribute("data-tapada"); tap.innerHTML = cartaHTML(r, PALOS[s]); void tap.offsetWidth;
+        tap.firstElementChild.classList.add("abierta"); Sonido.tocar("carta"); llevo[lado] = 2;
+        await Efectos.esperar(Efectos.reducido ? 0 : 650);
+      }
+      while (llevo[lado] < cartas.length) {
+        const [r, s] = cartas[llevo[lado]];
+        host.insertAdjacentHTML("beforeend", `<div class="slot">${cartaHTML(r, PALOS[s])}</div>`);
+        const c = host.lastElementChild.firstElementChild; void c.offsetWidth;
+        await Efectos.esperar(60); c.classList.add("abierta"); Sonido.tocar("carta");
+        llevo[lado]++;
+        await Efectos.esperar(Efectos.reducido ? 0 : 480);
+      }
+      if (tapada && !host.querySelector(".slot[data-tapada]")) {
+        host.insertAdjacentHTML("beforeend", `<div class="slot" data-tapada="1">${cartaHTML(0)}</div>`);
+        await Efectos.esperar(Efectos.reducido ? 0 : 300);
+      }
+    }
+
+    function fase(jugando) {
+      enCurso = jugando;
+      if (jugando) $("b-pedir").disabled = $("b-plantar").disabled = false;
+      $("acciones").classList.toggle("on", jugando);
+      $("bloque-apuesta").classList.toggle("off", jugando);
+      $("apuesta-viva").innerHTML = jugando ? `Apuesta en juego: <b>🪙 ${fmtFichas(apuestaMano)}</b>` : "";
+      $("titulo-mesa").textContent = jugando ? "¿Pedís, te plantás o doblás?" : "Llegá a 21 sin pasarte";
+    }
+
+    // Muestra el estado que manda el servidor
+    async function mostrar(e, { inicial = false } = {}) {
+      apuestaMano = Number(e.apuesta);
+      // reparto inicial: alternado jugador / casa / jugador / casa(tapada)
+      if (inicial && llevo.jugador === 0) {
+        const j = e.jugador, c = e.casa;
+        await repartirLado("jugador", j.slice(0, 1), false);
+        await repartirLado("casa", c.slice(0, 1), false);
+        await repartirLado("jugador", j.slice(0, 2), false);
+        if (e.casa_oculta) await repartirLado("casa", c.slice(0, 1), true); else await repartirLado("casa", c, false);
+        if (j.length > 2) await repartirLado("jugador", j, false);
+      } else {
+        await repartirLado("jugador", e.jugador, false);
+        if (e.terminada) await repartirLado("casa", e.casa, false);
+      }
+      puntos("jugador", e.pt_jugador, estadoPuntos(e.pt_jugador));
+      puntos("casa", e.casa_oculta ? e.pt_casa + " + ?" : e.pt_casa, e.casa_oculta ? "" : estadoPuntos(e.pt_casa));
+      if (e.terminada) { await terminar(e); } else { fase(true); $("b-doblar").disabled = !e.puede_doblar || Mesa.saldo < apuestaMano; }
+    }
+
+    const DETALLE = {
+      blackjack: "¡Blackjack! Paga 3 a 2", casa_pasa: "La casa se pasó de 21", gana: "Le ganaste a la casa",
+      empata: "Empate con la casa", pierde: "La casa gana", pasaste: "Te pasaste de 21",
+    };
+    async function terminar(e) {
+      fase(false);
+      const gan = Number(e.ganancia);
+      if (gan > Number(e.apuesta)) manos.jugador.querySelectorAll(".carta").forEach((c) => c.classList.add("ganadora"));
+      Mesa.resultado({ apuesta: Number(e.apuesta), ganancia: gan, detalle: DETALLE[e.resultado] });
+      Mesa.setSaldo(e.saldo_nuevo);
+    }
+
+    async function accion(fn) {
+      if (ocupado || !enCurso) return;
+      ocupado = true; ["b-pedir", "b-plantar", "b-doblar"].forEach((i) => ($(i).disabled = true));
+      try { Sonido.tocar("click"); const e = await llamarRPC(fn); if (fn === "blackjack_doblar") Mesa.setSaldo(Mesa.saldo - apuestaMano); await mostrar(e); }
+      catch (err) { Mesa.ctrl.aviso(err.message || "No se pudo", true); }
+      finally { ocupado = false; if (enCurso) { $("b-pedir").disabled = $("b-plantar").disabled = false; } }
+    }
+    $("b-pedir").onclick = () => accion("blackjack_pedir");
+    $("b-plantar").onclick = () => accion("blackjack_plantarse");
+    $("b-doblar").onclick = () => accion("blackjack_doblar");
+
+    (async function () {
+      await Mesa.iniciar({ juego: "blackjack", inicial: 2000 });
+      $("btn-jugar").onclick = (ev) => {
+        Mesa.ronda(ev.currentTarget, async (apuesta) => {
+          limpiar();
+          const e = await llamarRPC("blackjack_repartir", { p_apuesta: apuesta });
+          Mesa.setSaldo(e.terminada ? Mesa.saldo - apuesta : e.saldo_nuevo);
+          await mostrar(e, { inicial: true });
+        });
+      };
+      // ¿Quedó una mano abierta? La retomamos
+      try {
+        const e = await llamarRPC("blackjack_estado");
+        if (e.activa) { limpiar(); Mesa.setSaldo(e.saldo_nuevo, false); await mostrar(e, { inicial: true }); }
+      } catch (err) {}
+    })();
+  </script>
+</body>
+</html>
