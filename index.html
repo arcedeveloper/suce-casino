@@ -191,6 +191,11 @@
       moneda:        "linear-gradient(135deg, #4d3f1f, #1f1a0a)",
       plinko:        "linear-gradient(135deg, #1f2f4d, #0a121f)",
       minas:         "linear-gradient(135deg, #3d1f1f, #1a0a0a)",
+      dragon_tigre:  "linear-gradient(135deg, #4d2a1f, #1f0f0a)",
+      crash:         "linear-gradient(135deg, #1f2f4d, #0a0e1f)",
+      rango:         "linear-gradient(135deg, #1f4d4a, #0a1f1d)",
+      penales:       "linear-gradient(135deg, #1f4d2a, #0a1f10)",
+      sicbo:         "linear-gradient(135deg, #4d1f1f, #1f0a0a)",
       carta_alta:    "linear-gradient(135deg, #2f2f4d, #12121f)",
       pvp_carta_alta: "linear-gradient(135deg, #0f766e, #022c2a)",
     };
@@ -199,8 +204,8 @@
       { id: "tragamonedas", nombre: "Tragamonedas", emoji: "🎰", ruta: "juegos/tragamonedas.html", disponible: true, tag: "Máquinas", badge: "Hot", badgeColor: "rojo" },
       { id: "ruleta", nombre: "Ruleta", emoji: "🎡", ruta: "juegos/ruleta.html", disponible: true, tag: "Mesa", badge: "Popular", badgeColor: "dorado" },
       { id: "blackjack", nombre: "Blackjack", emoji: "🃏", ruta: "juegos/blackjack.html", disponible: true, tag: "Cartas", badge: "Nuevo", badgeColor: "verde" },
-      { id: "poker", nombre: "Video Póker", emoji: "🂡", ruta: "juegos/poker.html", disponible: false, tag: "Próximamente", badge: "Pronto", badgeColor: "gris" },
-      { id: "baccarat", nombre: "Baccarat", emoji: "🎴", ruta: "juegos/baccarat.html", disponible: false, tag: "Próximamente", badge: "Pronto", badgeColor: "gris" },
+      { id: "poker", nombre: "Video Póker", emoji: "🂡", ruta: "juegos/poker.html", disponible: true, tag: "Cartas", badge: "Nuevo", badgeColor: "verde" },
+      { id: "baccarat", nombre: "Baccarat", emoji: "🎴", ruta: "juegos/baccarat.html", disponible: true, tag: "Mesa", badge: "Nuevo", badgeColor: "verde" },
       { id: "dados", nombre: "Dados", emoji: "🎲", ruta: "juegos/dados.html", disponible: true, tag: "Mesa", badge: "Nuevo", badgeColor: "verde" },
       { id: "keno", nombre: "Keno", emoji: "🔢", ruta: "juegos/keno.html", disponible: true, tag: "Sorteo", badge: "Nuevo", badgeColor: "verde" },
       { id: "bingo", nombre: "Bingo", emoji: "🅱️", ruta: "juegos/bingo.html", disponible: false, tag: "Próximamente", badge: "Pronto", badgeColor: "gris" },
@@ -208,8 +213,13 @@
       { id: "ruleta_suerte", nombre: "Rueda de la Suerte", emoji: "🎡", ruta: "juegos/rueda.html", disponible: true, tag: "Instantáneo", badge: "Hot", badgeColor: "rojo" },
       { id: "hilo", nombre: "Alto o Bajo", emoji: "⬆️", ruta: "juegos/hilo.html", disponible: true, tag: "Cartas", badge: "Nuevo", badgeColor: "verde" },
       { id: "moneda", nombre: "Cara o Cruz", emoji: "🪙", ruta: "juegos/moneda.html", disponible: true, tag: "Instantáneo", badge: "Popular", badgeColor: "dorado" },
-      { id: "plinko", nombre: "Plinko", emoji: "⚪", ruta: "juegos/plinko.html", disponible: false, tag: "Próximamente", badge: "Pronto", badgeColor: "gris" },
-      { id: "minas", nombre: "Minas", emoji: "💣", ruta: "juegos/minas.html", disponible: false, tag: "Próximamente", badge: "Pronto", badgeColor: "gris" },
+      { id: "plinko", nombre: "Plinko", emoji: "⚪", ruta: "juegos/plinko.html", disponible: true, tag: "Instantáneo", badge: "Hot", badgeColor: "rojo" },
+      { id: "minas", nombre: "Minas", emoji: "💣", ruta: "juegos/minas.html", disponible: true, tag: "Instantáneo", badge: "Nuevo", badgeColor: "verde" },
+      { id: "dragon_tigre", nombre: "Dragon Tiger", emoji: "🐉", ruta: "juegos/dragon_tigre.html", disponible: true, tag: "Cartas", badge: "Nuevo", badgeColor: "verde" },
+      { id: "crash", nombre: "Crash", emoji: "🚀", ruta: "juegos/crash.html", disponible: true, tag: "Instantáneo", badge: "Hot", badgeColor: "rojo" },
+      { id: "rango", nombre: "Dados Más o Menos", emoji: "🎯", ruta: "juegos/rango.html", disponible: true, tag: "Mesa", badge: "Nuevo", badgeColor: "verde" },
+      { id: "penales", nombre: "Penales", emoji: "⚽", ruta: "juegos/penales.html", disponible: true, tag: "Instantáneo", badge: "Nuevo", badgeColor: "verde" },
+      { id: "sicbo", nombre: "Sic Bo", emoji: "🎲", ruta: "juegos/sicbo.html", disponible: true, tag: "Mesa", badge: "Nuevo", badgeColor: "verde" },
       { id: "carta_alta", nombre: "Carta Más Alta", emoji: "♠️", ruta: "juegos/carta_alta.html", disponible: true, tag: "Cartas", badge: "Nuevo", badgeColor: "verde" },
     ];
 
@@ -356,7 +366,7 @@
     const NOMBRES_JUEGO = {
       tragamonedas: "Tragamonedas", ruleta: "Ruleta", dados: "Dados",
       keno: "Keno", rasca: "Rasca y Gana", rueda: "Rueda de la Suerte",
-      hilo: "Alto o Bajo", moneda: "Cara o Cruz", carta_alta: "Carta Más Alta", blackjack: "Blackjack"
+      hilo: "Alto o Bajo", moneda: "Cara o Cruz", carta_alta: "Carta Más Alta", blackjack: "Blackjack", poker: "Video Póker", baccarat: "Baccarat", plinko: "Plinko", minas: "Minas", dragon_tigre: "Dragon Tiger", crash: "Crash", rango: "Dados Más o Menos", penales: "Penales", sicbo: "Sic Bo"
     };
 
     async function cargarActividad() {
