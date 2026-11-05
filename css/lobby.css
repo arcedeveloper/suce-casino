@@ -162,3 +162,12 @@ html { scroll-behavior: smooth; }
 .lb-pills .lb-pill { width: auto; margin: 0; flex: none; box-shadow: none; }
 .lb-pills .lb-pill.on { box-shadow: 0 0 18px rgba(45,212,191,.35); }
 .lb-card .fav { width: 32px; margin: 0; box-shadow: none; }
+
+/* Títulos de sección centrados */
+.lb-tit { justify-content: center; text-align: center; }
+.lb-tit p { margin-left: auto; margin-right: auto; }
+.lb-tit::after { background: linear-gradient(90deg, rgba(227,182,90,0), var(--oro) 50%, rgba(227,182,90,0)); }
+.lb-faq { margin-left: auto; margin-right: auto; }
+.lb-caja h3 { text-align: center; }
+.lb-paso h4, .lb-paso p { text-align: center; }
+.lb-paso::before { left: 50%; translate: -50% 0; }
