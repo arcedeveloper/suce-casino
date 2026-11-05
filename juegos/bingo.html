@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bingo — SUCE</title>
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/juegos.css">
+<style>
+  .bi .bolillero { display: flex; align-items: center; gap: 14px; justify-content: center; margin-bottom: 12px; }
+  .bi .bola { width: 84px; height: 84px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-weight: 900; font-size: 2.2rem; color: #1a1205; background: radial-gradient(circle at 35% 30%, #fff7d6, #e3b65a 70%); box-shadow: 0 10px 24px rgba(0,0,0,.55), 0 0 28px rgba(227,182,90,.45); }
+  .bi .bola small { font-family: 'Poppins', sans-serif; font-size: .7rem; font-weight: 800; letter-spacing: 1px; line-height: 1; }
+  .bi .bola.rueda { animation: biGira .5s ease-out; } @keyframes biGira { from { transform: scale(.5) rotate(-120deg); opacity: .3; } to { transform: none; opacity: 1; } }
+  .bi .contador { color: rgba(255,255,255,.7); font-size: .85rem; } .bi .contador b { font-size: 1.2rem; color: #fff; }
+  .bi .historial { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; min-height: 26px; margin-bottom: 14px; }
+  .bi .historial span { width: 26px; height: 26px; font-size: .7rem; border-radius: 50%; background: rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fde68a; }
+  .bi .cartones { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .bi .cartones.uno { grid-template-columns: minmax(0, 300px); justify-content: center; }
+  .bi .carton { border-radius: 14px; padding: 8px; background: linear-gradient(160deg, #0d3b3a, #06201f); border: 1px solid rgba(94,234,212,.35); position: relative; }
+  .bi .carton .cab, .bi .carton .nums { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+  .bi .carton .cab span { text-align: center; font-weight: 900; color: #fde68a; font-size: .8rem; padding: 2px 0; font-family: 'Playfair Display', serif; }
+  .bi .carton .nums span { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 7px; background: rgba(255,255,255,.08); font-weight: 700; font-size: .85rem; transition: background .2s, transform .2s; font-variant-numeric: tabular-nums; }
+  .bi .carton .nums span.m { background: radial-gradient(circle at 35% 30%, #5eead4, #0d9488); color: #022c22; transform: scale(1.04); }
+  .bi .carton .nums span.libre { background: rgba(227,182,90,.3); color: #fde68a; font-size: .95rem; }
+  .bi .carton .nums span.linea { background: radial-gradient(circle at 35% 30%, #fde68a, #e3b65a); color: #1a1205; box-shadow: 0 0 12px rgba(227,182,90,.8); }
+  .bi .carton .pie { text-align: center; font-size: .78rem; margin-top: 6px; min-height: 1.1em; color: var(--text-dim); } .bi .carton .pie b { color: var(--neon-suave); }
+  .bi .sel-cart { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; margin: 6px 0; } .bi .sel-cart > span { color: var(--text-dim); font-size: .85rem; }
+  .bi .sel-cart button.opcion { width: auto; min-width: 48px; flex: none; padding: 10px 16px; }
+  @media (max-width: 420px) { .bi .carton .nums span { font-size: .72rem; border-radius: 5px; } .bi .bola { width: 70px; height: 70px; font-size: 1.8rem; } }
+</style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="juego-wrap">
+      <a href="../index.html" class="volver">← Volver al lobby</a>
+      <div class="juego-top">
+        <div class="marca">🅱️ Bingo</div>
+        <div class="derecha"><div class="saldo-pill"><span aria-hidden="true">🪙</span><span id="saldo">···</span></div></div>
+      </div>
+      <section class="mesa bi">
+        <p class="mesa-titulo" id="titulo-mesa">Completá líneas en tus cartones</p>
+        <div class="bolillero"><div class="bola" id="bola">?<small>BOLILLA</small></div><div class="contador"><b id="cuenta">0</b> / 36<br>bolillas</div></div>
+        <div class="historial" id="historial"></div>
+        <div class="cartones uno" id="cartones"></div>
+        <div class="resultado" id="resultado"></div>
+      </section>
+      <div class="sel-cart" id="sel-cart"><span>Cartones:</span>
+        <button type="button" class="opcion sel" data-n="1">1</button><button type="button" class="opcion" data-n="2">2</button><button type="button" class="opcion" data-n="3">3</button><button type="button" class="opcion" data-n="4">4</button>
+      </div>
+      <div id="rack"></div>
+      <button class="btn-jugar" id="btn-jugar">Jugar bingo</button>
+      <div id="mensaje" role="status" style="position:absolute;left:-9999px"></div>
+      <details class="reglas">
+        <summary>Cómo se paga</summary>
+        <table class="tabla-premios"><tr><td>1 línea</td><td>×2,2</td></tr><tr><td>2 líneas</td><td>×5</td></tr><tr><td>3 líneas</td><td>×15</td></tr><tr><td>4 líneas</td><td>×50</td></tr><tr><td>5 líneas</td><td>×150</td></tr><tr><td>6 o más</td><td>×500</td></tr></table><p style="color:var(--text-dim);font-size:.82rem;margin:0 0 10px">Se sacan 36 bolillas del 1 al 75. Cada cartón tiene 24 números y el centro es libre. Una línea es una fila, una columna o una diagonal completa. Tu apuesta se reparte en partes iguales entre los cartones que elijas, y cada cartón cobra según las líneas que completa.</p>
+      </details>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/juegos.js"></script>
+  <script>
+    Auth.requiereSesion("jugador");
+    const $ = (i) => document.getElementById(i);
+    let nCart = 1, ocupado = false;
+    const sel = $("sel-cart");
+    sel.addEventListener("click", (e) => { const b = e.target.closest("button[data-n]"); if (!b || ocupado) return; nCart = Number(b.dataset.n); sel.querySelectorAll("button").forEach((x) => x.classList.toggle("sel", x === b)); Sonido.tocar("click"); vistaPrevia(); });
+    Mesa.iniciar({ juego: "bingo", inicial: 2000 });
+    const LET = ["B", "I", "N", "G", "O"];
+    function cartonHTML(nums) {
+      const cab = LET.map((l) => `<span>${l}</span>`).join("");
+      const celdas = nums.map((n, i) => n === 0 ? `<span class="libre">★</span>` : `<span data-n="${n}">${n}</span>`).join("");
+      return `<div class="carton"><div class="cab">${cab}</div><div class="nums">${celdas}</div><div class="pie"></div></div>`;
+    }
+    function azar() { const a = []; for (let f = 0; f < 5; f++) for (let c = 0; c < 5; c++) a.push(f === 2 && c === 2 ? 0 : 1 + 15 * c + Math.floor(Math.random() * 15)); return a; }
+    function vistaPrevia() { $("cartones").className = "cartones" + (nCart === 1 ? " uno" : ""); $("cartones").innerHTML = Array.from({ length: nCart }, () => cartonHTML(azar())).join(""); }
+    vistaPrevia();
+    $("btn-jugar").onclick = (e) => {
+      Mesa.ronda(e.currentTarget, async (apuesta) => {
+        ocupado = true; sel.querySelectorAll("button").forEach((b) => (b.disabled = true));
+        try {
+          $("historial").innerHTML = ""; $("cuenta").textContent = "0"; $("bola").firstChild.nodeValue = "?";
+          const data = await llamarRPC("jugar_bingo", { p_apuesta: apuesta, p_cartones: nCart });
+          const r = data.resultado;
+          $("cartones").className = "cartones" + (nCart === 1 ? " uno" : "");
+          $("cartones").innerHTML = r.cartones.map((c) => cartonHTML(c.numeros)).join("");
+          const cart = [...document.querySelectorAll("#cartones .carton")];
+          const gap = Efectos.reducido ? 0 : 130;
+          for (let i = 0; i < r.bolas.length; i++) {
+            const n = r.bolas[i], b = $("bola");
+            b.firstChild.nodeValue = n; b.classList.remove("rueda"); void b.offsetWidth; b.classList.add("rueda");
+            $("cuenta").textContent = i + 1;
+            $("historial").insertAdjacentHTML("beforeend", `<span>${n}</span>`);
+            cart.forEach((c) => { const s = c.querySelector(`.nums span[data-n="${n}"]`); if (s) { s.classList.add("m"); Sonido.tocar("ficha"); } });
+            Sonido.tocar("tick"); await Efectos.esperar(gap);
+          }
+          // marcamos las líneas ganadoras
+          const L = [[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],[0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],[0,6,12,18,24],[4,8,12,16,20]];
+          r.cartones.forEach((c, i) => {
+            const celdas = cart[i].querySelectorAll(".nums span");
+            c.lineas.forEach((l) => L[l].forEach((k) => celdas[k].classList.add("linea")));
+            cart[i].querySelector(".pie").innerHTML = c.lineas.length ? `${c.lineas.length} ${c.lineas.length === 1 ? "línea" : "líneas"} · cobra <b>${fmtFichas(c.premio)}</b>` : "Sin líneas";
+          });
+          await Efectos.esperar(500);
+          const tot = r.cartones.reduce((s, c) => s + c.lineas.length, 0);
+          Mesa.resultado({ apuesta, ganancia: data.ganancia, detalle: tot ? `${tot} ${tot === 1 ? "línea completada" : "líneas completadas"}` : "Ninguna línea completa" });
+          Mesa.setSaldo(data.saldo_nuevo);
+        } finally { ocupado = false; sel.querySelectorAll("button").forEach((b) => (b.disabled = false)); }
+      });
+    };
+  </script>
+</body>
+</html>

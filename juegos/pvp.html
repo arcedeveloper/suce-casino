@@ -101,7 +101,6 @@
       baccarat_duelo: { nombre: "Duelo Baccarat", emoji: "🎴", desc: "Cada uno saca 2 cartas y cuenta la última cifra de la suma (0-9). Gana el más cercano a 9.", formatear: n => n },
       doble_ruleta: { nombre: "Doble Ruleta", emoji: "🎡", desc: "Cada uno gira la ruleta dos veces y se suman los números (0-72). La suma más alta gana.", formatear: n => n },
       tres_cartas: { nombre: "Tres Cartas", emoji: "♠️", desc: "Cada uno saca 3 cartas y vale la más alta (el As es la más alta de todas).", formatear: n => ({11:'J',12:'Q',13:'K',14:'A'}[n] || n) },
-      numero_mil: { nombre: "Número Mil", emoji: "🔢", desc: "Cada uno saca un número del 1 al 1.000. El más alto gana.", formatear: n => n },
     };
 
     const params = new URLSearchParams(window.location.search);

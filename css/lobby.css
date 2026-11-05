@@ -1,0 +1,164 @@
+/* =====================================================================
+   SUCE — Portada / lobby. Estilo "casino de lujo nocturno":
+   negro tinta, turquesa como acento y dorado fino en detalles.
+   ===================================================================== */
+:root { --oro: #e3b65a; --oro-suave: #f3d58e; --tinta: #07090d; --vidrio: rgba(255,255,255,.04); --borde: rgba(255,255,255,.08); }
+html { scroll-behavior: smooth; }
+.lb-wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+.lb-sec { padding: 56px 0 8px; }
+.lb-tit { display: flex; align-items: end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+.lb-tit h2 { margin: 0; font-family: 'Playfair Display', serif; font-weight: 900; font-size: clamp(1.5rem, 3.4vw, 2.1rem); letter-spacing: .2px; }
+.lb-tit p { margin: 6px 0 0; color: var(--text-dim); font-size: .95rem; max-width: 56ch; }
+.lb-tit::after { content: ""; flex-basis: 100%; height: 1px; background: linear-gradient(90deg, var(--oro), rgba(227,182,90,0) 60%); opacity: .55; order: 5; }
+
+/* ---------- Hero ---------- */
+.lb-hero { position: relative; overflow: hidden; padding: 64px 0 56px; }
+.lb-hero::before { content: ""; position: absolute; inset: 0; background:
+  radial-gradient(60% 80% at 78% 40%, rgba(45,212,191,.16), transparent 70%),
+  radial-gradient(40% 50% at 8% 0%, rgba(227,182,90,.10), transparent 70%); pointer-events: none; }
+.lb-hero .lb-wrap { position: relative; display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px; align-items: center; }
+.lb-badge { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(45,212,191,.09); border: 1px solid rgba(94,234,212,.3); color: var(--gold-soft); font-size: .82rem; font-weight: 600; }
+.lb-badge i { width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 10px #34d399; }
+.lb-h1 { margin: 18px 0 14px; font-family: 'Playfair Display', serif; font-weight: 900; font-size: clamp(2.2rem, 5.4vw, 3.8rem); line-height: 1.06; letter-spacing: -.5px; }
+.lb-h1 span { background: linear-gradient(100deg, var(--oro-suave), var(--oro)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lb-lead { color: #aab2c0; font-size: 1.05rem; line-height: 1.6; max-width: 52ch; margin: 0 0 26px; }
+.lb-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+.lb-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 26px; border-radius: 14px; font-weight: 700; font-size: .98rem; text-decoration: none; cursor: pointer; border: 1px solid transparent; transition: transform .15s, box-shadow .2s; font-family: inherit; }
+.lb-btn.p { color: #04211d; background: linear-gradient(180deg, #7ff0dd, #2dd4bf); box-shadow: 0 0 0 1px rgba(255,255,255,.25) inset, 0 10px 30px rgba(45,212,191,.3); }
+.lb-btn.p:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(255,255,255,.35) inset, 0 14px 38px rgba(45,212,191,.45); }
+.lb-btn.s { color: var(--text); background: var(--vidrio); border-color: rgba(255,255,255,.18); }
+.lb-btn.s:hover { border-color: var(--oro); color: var(--oro-suave); }
+.lb-cifras { display: flex; gap: 30px; flex-wrap: wrap; margin-top: 34px; }
+.lb-cifras b { display: block; font-family: 'Playfair Display', serif; font-size: 1.9rem; font-weight: 900; color: #fff; line-height: 1; font-variant-numeric: tabular-nums; }
+.lb-cifras small { color: var(--text-dim); font-size: .8rem; }
+
+/* mesa decorativa: abanico de cartas + fichas */
+.lb-vis { position: relative; height: 380px; perspective: 1000px; }
+.lb-mesa-aro { position: absolute; inset: 6% 4% 4%; border-radius: 50%; border: 1px solid rgba(227,182,90,.28); background: radial-gradient(closest-side, rgba(15,118,110,.35), rgba(5,20,20,.2) 70%, transparent); box-shadow: 0 0 80px rgba(45,212,191,.12) inset; }
+.lb-mesa-aro::after { content: ""; position: absolute; inset: 9%; border-radius: 50%; border: 1px dashed rgba(94,234,212,.22); }
+.lb-carta { position: absolute; width: 128px; height: 184px; left: 50%; top: 50%; border-radius: 14px; background: linear-gradient(160deg, #fff, #e8edf3); color: #0f172a; box-shadow: 0 24px 44px rgba(0,0,0,.6); font-family: 'Playfair Display', serif; padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between; }
+.lb-carta b { font-size: 1.6rem; line-height: 1; display: block; } .lb-carta b i { font-style: normal; display: block; font-size: 1.2rem; }
+.lb-carta em { font-style: normal; font-size: 4rem; text-align: center; line-height: 1; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.lb-carta.r { color: #be123c; }
+.lb-carta.c1 { transform: translate(-135%, -50%) rotate(-16deg); animation: lbFlota 7s ease-in-out infinite; }
+.lb-carta.c2 { transform: translate(-50%, -58%) rotate(2deg); z-index: 2; animation: lbFlota 7s ease-in-out -2s infinite; }
+.lb-carta.c3 { transform: translate(35%, -46%) rotate(15deg); animation: lbFlota 7s ease-in-out -4s infinite; }
+@keyframes lbFlota { 50% { translate: 0 -10px; } }
+.lb-ficha { position: absolute; width: 74px; height: 74px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: .8rem; color: #fff; background:
+  radial-gradient(closest-side, var(--c1) 58%, transparent 60%),
+  repeating-conic-gradient(#fff 0 12deg, var(--c1) 12deg 30deg); box-shadow: 0 10px 24px rgba(0,0,0,.55), inset 0 0 0 3px rgba(255,255,255,.18); z-index: 3; }
+.lb-ficha span { position: relative; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.lb-ficha.f1 { --c1: #be123c; left: 6%; bottom: 8%; } .lb-ficha.f2 { --c1: #0f766e; right: 8%; bottom: 14%; width: 84px; height: 84px; } .lb-ficha.f3 { --c1: #1d4ed8; right: 26%; top: 2%; width: 62px; height: 62px; }
+@media (prefers-reduced-motion: reduce) { .lb-carta { animation: none !important; } }
+
+/* ---------- Franja de confianza ---------- */
+.lb-confianza { border-block: 1px solid var(--borde); background: linear-gradient(90deg, rgba(255,255,255,.02), rgba(45,212,191,.04), rgba(255,255,255,.02)); }
+.lb-confianza .lb-wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding-top: 18px; padding-bottom: 18px; }
+.lb-conf { display: flex; gap: 12px; align-items: center; padding: 6px 4px; }
+.lb-conf svg { flex: none; width: 30px; height: 30px; stroke: var(--oro); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.lb-conf b { display: block; font-size: .92rem; } .lb-conf small { color: var(--text-dim); font-size: .78rem; line-height: 1.3; display: block; }
+
+/* ---------- Panel del jugador ---------- */
+.lb-panel { display: none; margin-top: 28px; padding: 18px 22px; border-radius: 18px; border: 1px solid rgba(227,182,90,.28); background: linear-gradient(120deg, rgba(227,182,90,.08), rgba(45,212,191,.06)); gap: 22px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
+.lb-panel.on { display: flex; }
+.lb-panel h3 { margin: 0 0 2px; font-family: 'Playfair Display', serif; font-size: 1.25rem; }
+.lb-panel .sub { color: var(--text-dim); font-size: .85rem; }
+.lb-panel .datos { display: flex; gap: 28px; flex-wrap: wrap; }
+.lb-panel .datos small { display: block; color: var(--text-dim); font-size: .74rem; }
+.lb-panel .datos b { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.lb-panel .pos { color: var(--green); } .lb-panel .neg { color: var(--red); }
+
+/* ---------- Catálogo ---------- */
+.lb-barra { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+.lb-buscar { position: relative; flex: 1 1 240px; max-width: 340px; }
+.lb-buscar input { width: 100%; padding: 12px 14px 12px 40px; border-radius: 12px; background: var(--vidrio); border: 1px solid var(--borde); color: var(--text); font-family: inherit; font-size: .95rem; }
+.lb-buscar input:focus { outline: 2px solid rgba(94,234,212,.5); border-color: transparent; }
+.lb-buscar svg { position: absolute; left: 13px; top: 50%; translate: 0 -50%; width: 18px; height: 18px; stroke: var(--text-dim); fill: none; stroke-width: 2; stroke-linecap: round; }
+.lb-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.lb-pill { padding: 9px 16px; border-radius: 999px; border: 1px solid var(--borde); background: var(--vidrio); color: var(--text-dim); font-family: inherit; font-weight: 600; font-size: .85rem; cursor: pointer; transition: all .15s; }
+.lb-pill:hover { color: #fff; border-color: rgba(255,255,255,.25); }
+.lb-pill.on { color: #04211d; background: linear-gradient(180deg, #7ff0dd, #2dd4bf); border-color: transparent; }
+.lb-pill small { opacity: .7; margin-left: 5px; font-weight: 500; }
+.lb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 16px; }
+.lb-vacio { grid-column: 1/-1; text-align: center; color: var(--text-dim); padding: 30px 0; }
+
+.lb-card { --t1: #3b2a6b; --t2: #14102b; position: relative; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; text-decoration: none; color: var(--text); background: linear-gradient(170deg, #12161f, #0a0d13); border: 1px solid var(--borde); transition: transform .2s, border-color .2s, box-shadow .25s; isolation: isolate; }
+.lb-card:hover { transform: translateY(-5px); border-color: rgba(227,182,90,.55); box-shadow: 0 18px 38px rgba(0,0,0,.55), 0 0 0 1px rgba(227,182,90,.2); }
+.lb-card:focus-visible { outline: 2px solid var(--neon-suave, #5eead4); outline-offset: 3px; }
+.lb-card .arte { position: relative; aspect-ratio: 1 / .92; display: flex; align-items: center; justify-content: center; background: radial-gradient(closest-side at 50% 52%, var(--t1), var(--t2) 85%); }
+.lb-card .arte::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(45deg, rgba(255,255,255,.035) 0 1px, transparent 1px 11px); }
+.lb-card .arte::after { content: ""; position: absolute; width: 62%; aspect-ratio: 1; border-radius: 50%; border: 1px solid rgba(255,255,255,.12); box-shadow: 0 0 40px var(--t1) inset; }
+.lb-card .ico { position: relative; z-index: 1; font-size: 3.4rem; filter: drop-shadow(0 8px 14px rgba(0,0,0,.55)); transition: transform .25s; }
+.lb-card:hover .ico { transform: scale(1.12) rotate(-4deg); }
+.lb-card .info { padding: 12px 14px 14px; }
+.lb-card .nom { font-weight: 700; font-size: .98rem; line-height: 1.25; }
+.lb-card .cat { color: var(--text-dim); font-size: .78rem; margin-top: 2px; }
+.lb-card .tag { position: absolute; top: 10px; left: 10px; z-index: 2; padding: 3px 9px; border-radius: 999px; font-size: .68rem; font-weight: 800; letter-spacing: .3px; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(4px); }
+.lb-card .tag.hot { color: #fecaca; border-color: rgba(248,113,113,.6); } .lb-card .tag.new { color: #a7f3d0; border-color: rgba(52,211,153,.55); } .lb-card .tag.pop { color: var(--oro-suave); border-color: rgba(227,182,90,.6); } .lb-card .tag.vivo { color: #fecaca; border-color: rgba(248,113,113,.6); }
+.lb-card .fav { position: absolute; top: 8px; right: 8px; z-index: 3; width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.5); color: #fff; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0; }
+.lb-card .fav.on { color: var(--oro); border-color: var(--oro); }
+.lb-card .jugar { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 2; text-align: center; padding: 10px; border-radius: 12px; font-weight: 800; font-size: .86rem; color: #04211d; background: linear-gradient(180deg, #7ff0dd, #2dd4bf); opacity: 0; translate: 0 8px; transition: all .2s; pointer-events: none; }
+.lb-card:hover .jugar, .lb-card:focus-visible .jugar { opacity: 1; translate: 0 0; }
+.lb-card.bloq { opacity: .6; } .lb-card.bloq .jugar { background: rgba(255,255,255,.2); color: #fff; }
+/* un solo color por categoría: paleta sobria y consistente */
+.lb-card[data-c="Máquinas"] { --t1: #7f1d1d; --t2: #240808; }
+.lb-card[data-c="Mesa"] { --t1: #14573d; --t2: #06180f; }
+.lb-card[data-c="Cartas"] { --t1: #312e81; --t2: #0d0c26; }
+.lb-card[data-c="Instantáneo"] { --t1: #7c4a07; --t2: #1f1203; }
+.lb-card[data-c="Sorteo"] { --t1: #0f5f68; --t2: #04171a; }
+.lb-card[data-c="1 vs 1"] { --t1: #0f766e; --t2: #031a18; }
+.lb-card[data-c="Próximamente"] { --t1: #3a3f4b; --t2: #0d0f14; }
+
+/* ---------- Dos columnas: ganadores + actividad ---------- */
+.lb-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.lb-caja { border: 1px solid var(--borde); border-radius: 18px; background: linear-gradient(170deg, rgba(255,255,255,.04), rgba(255,255,255,.015)); padding: 20px; }
+.lb-caja h3 { margin: 0 0 14px; font-family: 'Playfair Display', serif; font-size: 1.2rem; }
+.lb-rank { display: grid; gap: 8px; }
+.lb-rank .fila { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.035); }
+.lb-rank .pos { width: 30px; text-align: center; font-size: 1.2rem; }
+.lb-rank .n { flex: 1; font-weight: 600; } .lb-rank .m { color: var(--oro-suave); font-weight: 700; font-variant-numeric: tabular-nums; }
+.lb-caja .actividad-lista { max-height: 340px; overflow-y: auto; }
+
+/* ---------- Cómo funciona ---------- */
+.lb-pasos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; counter-reset: p; }
+.lb-paso { position: relative; padding: 22px 20px 20px 20px; border: 1px solid var(--borde); border-radius: 18px; background: var(--vidrio); }
+.lb-paso::before { counter-increment: p; content: counter(p); position: absolute; top: -16px; left: 18px; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-weight: 900; color: #1a1205; background: linear-gradient(var(--oro-suave), var(--oro)); box-shadow: 0 6px 16px rgba(227,182,90,.35); }
+.lb-paso h4 { margin: 8px 0 6px; font-size: 1.05rem; } .lb-paso p { margin: 0; color: var(--text-dim); font-size: .9rem; line-height: 1.55; }
+
+/* ---------- FAQ ---------- */
+.lb-faq { max-width: 820px; }
+.lb-faq details { border: 1px solid var(--borde); border-radius: 14px; background: var(--vidrio); padding: 2px 18px; margin-bottom: 10px; }
+.lb-faq summary { cursor: pointer; padding: 15px 0; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+.lb-faq summary::-webkit-details-marker { display: none; } .lb-faq summary::after { content: "+"; color: var(--oro); font-size: 1.3rem; line-height: 1; }
+.lb-faq details[open] summary::after { content: "–"; }
+.lb-faq details p { margin: 0 0 16px; color: var(--text-dim); line-height: 1.6; font-size: .93rem; }
+
+/* ---------- Footer ---------- */
+.lb-foot { margin-top: 70px; border-top: 1px solid var(--borde); background: #05070a; padding: 44px 0 28px; }
+.lb-foot .cols { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 30px; }
+.lb-foot h5 { margin: 0 0 12px; font-size: .9rem; color: var(--oro-suave); }
+.lb-foot a, .lb-foot p { display: block; color: var(--text-dim); font-size: .88rem; text-decoration: none; margin: 0 0 8px; line-height: 1.55; }
+.lb-foot a:hover { color: var(--gold-soft); }
+.lb-foot .marca-f { display: flex; align-items: center; gap: 10px; font-family: 'Playfair Display', serif; font-weight: 900; font-size: 1.4rem; color: var(--gold-soft); margin-bottom: 10px; }
+.lb-foot .legal { margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--borde); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; color: #6b7280; font-size: .8rem; }
+.lb-foot .mas18 { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; border: 2px solid #6b7280; font-weight: 800; color: #9ca3af; font-size: .8rem; }
+
+/* reveal */
+.lb-rev { opacity: 0; translate: 0 18px; transition: opacity .6s, translate .6s; }
+.lb-rev.visible { opacity: 1; translate: 0 0; }
+@media (prefers-reduced-motion: reduce) { .lb-rev { opacity: 1; translate: none; transition: none; } }
+
+@media (max-width: 900px) {
+  .lb-hero .lb-wrap { grid-template-columns: 1fr; } .lb-vis { height: 300px; order: -1; margin-bottom: -10px; }
+  .lb-carta { width: 100px; height: 144px; } .lb-carta em { font-size: 3rem; } .lb-carta b { font-size: 1.25rem; }
+  .lb-confianza .lb-wrap { grid-template-columns: 1fr 1fr; } .lb-dos { grid-template-columns: 1fr; }
+  .lb-pasos { grid-template-columns: 1fr; gap: 26px; } .lb-foot .cols { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 520px) {
+  .lb-wrap { padding: 0 14px; } .lb-hero { padding-top: 34px; } .lb-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .lb-card .ico { font-size: 2.7rem; } .lb-card .nom { font-size: .9rem; } .lb-confianza .lb-wrap { grid-template-columns: 1fr; } .lb-foot .cols { grid-template-columns: 1fr; }
+  .lb-btn { flex: 1 1 100%; } .lb-card .jugar { display: none; }
+}
+.lb-pills .lb-pill { width: auto; margin: 0; flex: none; box-shadow: none; }
+.lb-pills .lb-pill.on { box-shadow: 0 0 18px rgba(45,212,191,.35); }
+.lb-card .fav { width: 32px; margin: 0; box-shadow: none; }
